@@ -11,7 +11,7 @@ use Exception;
 class AppointmentController extends Controller
 {
     /**
-     * ✅ Create a new appointment
+     * ✅ Create a new appointment (default status = Pending)
      */
     public function createAppointment(Request $request)
     {
@@ -21,24 +21,24 @@ class AppointmentController extends Controller
                 'doctor_id'         => 'required|exists:doctors,id',
                 'appointment_date'  => 'required|date',
                 'appointment_time'  => 'required',
-                'reason_for_visit'  => 'required|string',
+                'reason_for_visit'  => 'required|string|max:255',
                 'notes'             => 'nullable|string',
             ]);
 
-            $validated['status'] = 'Scheduled'; // Default status
+            $validated['status'] = 'Pending'; //
 
             $appointment = Appointment::create($validated);
 
             return response()->json([
                 'isSuccess' => true,
-                'message'   => 'Appointment created successfully!',
-                'data'      => $appointment
+                'message'   => 'Appointment request submitted successfully. Awaiting doctor approval.',
+                'data'      => $appointment,
             ], 201);
         } catch (Exception $e) {
             return response()->json([
                 'isSuccess' => false,
                 'message'   => 'Failed to create appointment.',
-                'error'     => $e->getMessage()
+                'error'     => $e->getMessage(),
             ], 500);
         }
     }
@@ -54,7 +54,7 @@ class AppointmentController extends Controller
 
         return response()->json([
             'isSuccess' => true,
-            'data' => $appointments
+            'data' => $appointments,
         ]);
     }
 
@@ -69,18 +69,18 @@ class AppointmentController extends Controller
         if (!$appointment) {
             return response()->json([
                 'isSuccess' => false,
-                'message' => 'Appointment not found.'
+                'message' => 'Appointment not found.',
             ], 404);
         }
 
         return response()->json([
             'isSuccess' => true,
-            'data' => $appointment
+            'data' => $appointment,
         ]);
     }
 
     /**
-     * ✅ Update appointment
+     * ✅ Update appointment details (for patient updates)
      */
     public function updateAppointment(Request $request, $id)
     {
@@ -89,29 +89,32 @@ class AppointmentController extends Controller
         if (!$appointment) {
             return response()->json([
                 'isSuccess' => false,
-                'message' => 'Appointment not found.'
+                'message' => 'Appointment not found.',
             ], 404);
         }
 
         $validated = $request->validate([
             'appointment_date' => 'required|date',
             'appointment_time' => 'required',
-            'reason_for_visit' => 'required|string',
+            'reason_for_visit' => 'required|string|max:255',
             'notes'            => 'nullable|string',
-            'status'           => 'required|string|in:Scheduled,Completed,Cancelled',
         ]);
 
         $appointment->update($validated);
 
         return response()->json([
             'isSuccess' => true,
-            'message'   => 'Appointment updated successfully!',
-            'data'      => $appointment
+            'message'   => 'Appointment details updated successfully.',
+            'data'      => $appointment,
         ]);
     }
 
+
+
+
+
     /**
-     * ✅ Delete appointment
+     * 🗑️ Delete appointment
      */
     public function deleteAppointment($id)
     {
@@ -120,7 +123,7 @@ class AppointmentController extends Controller
         if (!$appointment) {
             return response()->json([
                 'isSuccess' => false,
-                'message' => 'Appointment not found.'
+                'message' => 'Appointment not found.',
             ], 404);
         }
 
@@ -128,7 +131,7 @@ class AppointmentController extends Controller
 
         return response()->json([
             'isSuccess' => true,
-            'message' => 'Appointment deleted successfully.'
+            'message' => 'Appointment deleted successfully.',
         ]);
     }
 }

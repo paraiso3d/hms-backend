@@ -3,11 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable; // ✅ Use Authenticatable instead of Model
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
-class Patient extends Model
+class Patient extends Authenticatable
 {
-    use HasFactory;
+    use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
         'full_name',
@@ -16,8 +18,12 @@ class Patient extends Model
         'email',
         'phone_number',
         'address',
-        'medical_history',
-        'current_symptoms',
+        'password',
+        'is_archived',
+    ];
+
+    protected $hidden = [
+        'password',
     ];
 
     // 🩺 Relationships

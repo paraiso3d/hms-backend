@@ -31,6 +31,8 @@ Route::get('/getdoctorbyid/{id}', [DoctorController::class, 'getDoctorById']);
 Route::post('/createdoctor', [DoctorController::class, 'createDoctor']);
 Route::post('/updatedoctor/{id}', [DoctorController::class, 'updateDoctor']);
 Route::post('/deletedoctor/{id}', [DoctorController::class, 'deleteDoctor']);
+Route::post('approveappointment/{id}', [DoctorController::class, 'approveAppointment']);
+Route::post('rejectappointment/{id}', [DoctorController::class, 'rejectAppointment']);
 
 
 // ---------------------
