@@ -9,6 +9,7 @@ use App\Http\Controllers\PatientController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\MedicalRecordController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\DropdownController;
 
 /*
 |--------------------------------------------------------------------------
@@ -78,3 +79,14 @@ Route::get('/getpaymentbyid/{id}', [PaymentController::class, 'getPaymentById'])
 Route::post('/createpayment', [PaymentController::class, 'createPayment']);
 Route::post('/updatepayment/{id}', [PaymentController::class, 'updatePayment']);
 Route::post('/deletepayment/{id}', [PaymentController::class, 'deletePayment']);
+
+// ---------------------
+// Dropdown Routes
+// ---------------------
+Route::prefix('dropdown')->group(function () {
+    Route::get('/getpatients', [DropdownController::class, 'getPatients']);
+    Route::get('/getdoctors', [DropdownController::class, 'getDoctors']);
+    Route::get('/getspecializations', [DropdownController::class, 'getSpecializations']);
+    Route::get('/getappointments', [DropdownController::class, 'getAppointments']);
+    Route::get('/getdoctorsbyspecialization/{specializationId}', [DropdownController::class, 'getDoctorsBySpecialization']);
+});
