@@ -11,15 +11,7 @@ use App\Http\Controllers\MedicalRecordController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\DropdownController;
 
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-|
-| All your API endpoints for the clinic management system.
-| Organized per module for maintainability.
-|
-*/
+
 
 // ---------------------
 // Specialization Routes
