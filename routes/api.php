@@ -1,0 +1,80 @@
+<?php
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\BaseController;
+use App\Http\Controllers\SpecializationController;
+use App\Http\Controllers\DoctorController;
+use App\Http\Controllers\PatientController;
+use App\Http\Controllers\AppointmentController;
+use App\Http\Controllers\MedicalRecordController;
+use App\Http\Controllers\PaymentController;
+
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+|
+| All your API endpoints for the clinic management system.
+| Organized per module for maintainability.
+|
+*/
+
+// ---------------------
+// Specialization Routes
+// ---------------------
+Route::get('/getspecializations', [SpecializationController::class, 'getSpecializations']);
+Route::get('/getspecializationbyid/{id}', [SpecializationController::class, 'getSpecializationById']);
+Route::post('/createspecialization', [SpecializationController::class, 'createSpecialization']);
+Route::post('/updatespecialization/{id}', [SpecializationController::class, 'updateSpecialization']);
+Route::post('/deletespecialization/{id}', [SpecializationController::class, 'deleteSpecialization']);
+
+
+// ---------------------
+// Doctor Routes
+// ---------------------
+Route::get('/getdoctors', [DoctorController::class, 'getDoctors']);
+Route::get('/getdoctorbyid/{id}', [DoctorController::class, 'getDoctorById']);
+Route::post('/createdoctor', [DoctorController::class, 'createDoctor']);
+Route::post('/updatedoctor/{id}', [DoctorController::class, 'updateDoctor']);
+Route::post('/deletedoctor/{id}', [DoctorController::class, 'deleteDoctor']);
+
+
+// ---------------------
+// Patient Routes
+// ---------------------
+Route::get('/getpatients', [PatientController::class, 'getPatients']);
+Route::get('/getpatientbyid/{id}', [PatientController::class, 'getPatientById']);
+Route::post('/createpatient', [PatientController::class, 'createPatient']);
+Route::post('/updatepatient/{id}', [PatientController::class, 'updatePatient']);
+Route::post('/deletepatient/{id}', [PatientController::class, 'deletePatient']);
+
+
+// ---------------------
+// Appointment Routes
+// ---------------------
+Route::get('/getappointments', [AppointmentController::class, 'getAppointments']);
+Route::get('/getappointmentbyid/{id}', [AppointmentController::class, 'getAppointmentById']);
+Route::post('/createappointment', [AppointmentController::class, 'createAppointment']);
+Route::post('/updateappointment/{id}', [AppointmentController::class, 'updateAppointment']);
+Route::post('/deleteappointment/{id}', [AppointmentController::class, 'deleteAppointment']);
+
+
+// ---------------------
+// Medical Record Routes
+// ---------------------
+Route::get('/getmedicalrecords', [MedicalRecordController::class, 'getMedicalRecords']);
+Route::get('/getmedicalrecordbyid/{id}', [MedicalRecordController::class, 'getMedicalRecordById']);
+Route::post('/createmedicalrecord', [MedicalRecordController::class, 'createMedicalRecord']);
+Route::post('/updatemedicalrecord/{id}', [MedicalRecordController::class, 'updateMedicalRecord']);
+Route::post('/deletemedicalrecord/{id}', [MedicalRecordController::class, 'deleteMedicalRecord']);
+
+
+// ---------------------
+// Payment Routes
+// ---------------------
+Route::get('/getpayments', [PaymentController::class, 'getPayments']);
+Route::get('/getpaymentbyid/{id}', [PaymentController::class, 'getPaymentById']);
+Route::post('/createpayment', [PaymentController::class, 'createPayment']);
+Route::post('/updatepayment/{id}', [PaymentController::class, 'updatePayment']);
+Route::post('/deletepayment/{id}', [PaymentController::class, 'deletePayment']);
