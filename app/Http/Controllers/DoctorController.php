@@ -26,7 +26,11 @@ class DoctorController extends Controller
                 'qualifications'      => 'required|string|max:255',
                 'available_days'      => 'required|array|min:1',
                 'available_days.*'    => 'string|max:50',
+                'profile_img'         => 'nullable|image|mimes:jpeg,png,jpg|max:2048', // 🖼️ Validate image
             ]);
+
+            // 📁 Save uploaded profile image
+            $profilePath = $this->saveFileToPublic($request, 'profile_img', 'doctor');
 
             $doctor = Doctor::create([
                 'doctor_name'         => $validated['doctor_name'],
@@ -37,9 +41,11 @@ class DoctorController extends Controller
                 'consultation_fee'    => $validated['consultation_fee'],
                 'qualifications'      => $validated['qualifications'],
                 'role'                => 'Doctor',
+                'profile_img'         => $profilePath, // 🧩 Insert image path
                 'is_archived'         => 0,
             ]);
 
+            // 🗓️ Store available days
             foreach ($validated['available_days'] as $day) {
                 $doctor->availableDays()->create(['day_of_week' => $day]);
             }
@@ -59,6 +65,82 @@ class DoctorController extends Controller
             ], 500);
         }
     }
+
+
+
+    public function updateDoctor(Request $request, $id)
+    {
+        try {
+            $doctor = Doctor::where('is_archived', 0)->find($id);
+
+            if (!$doctor) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message'   => 'Doctor not found or archived.',
+                ], 404);
+            }
+
+            $validated = $request->validate([
+                'doctor_name'         => 'required|string|max:255',
+                'email'               => 'required|email|unique:doctors,email,' . $id,
+                'password'            => 'nullable|string|min:6',
+                'specialization_id'   => 'required|integer|exists:specializations,id',
+                'years_of_experience' => 'required|integer|min:0',
+                'consultation_fee'    => 'required|numeric|min:0',
+                'qualifications'      => 'required|string|max:255',
+                'available_days'      => 'required|array|min:1',
+                'available_days.*'    => 'string|max:50',
+                'profile_img'         => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            ]);
+
+            $updateData = [
+                'doctor_name'         => $validated['doctor_name'],
+                'email'               => $validated['email'],
+                'specialization_id'   => $validated['specialization_id'],
+                'years_of_experience' => $validated['years_of_experience'],
+                'consultation_fee'    => $validated['consultation_fee'],
+                'qualifications'      => $validated['qualifications'],
+            ];
+
+            // 🔐 Update password if provided
+            if (!empty($validated['password'])) {
+                $updateData['password'] = Hash::make($validated['password']);
+            }
+
+            // 🖼️ Update profile image if new one uploaded
+            if ($request->hasFile('profile_img')) {
+                // Optional: delete old image if it exists
+                if ($doctor->profile_img && file_exists(public_path($doctor->profile_img))) {
+                    unlink(public_path($doctor->profile_img));
+                }
+
+                $updateData['profile_img'] = $this->saveFileToPublic($request, 'profile_img', 'doctor');
+            }
+
+            $doctor->update($updateData);
+
+            // 🔁 Refresh available days
+            $doctor->availableDays()->delete();
+            foreach ($validated['available_days'] as $day) {
+                $doctor->availableDays()->create(['day_of_week' => $day]);
+            }
+
+            $doctor->load(['specialization', 'availableDays']);
+
+            return response()->json([
+                'isSuccess' => true,
+                'message'   => 'Doctor updated successfully.',
+                'data'      => $doctor,
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message'   => 'Failed to update doctor.',
+                'error'     => $e->getMessage(),
+            ], 500);
+        }
+    }
+
 
     /**
      * ✅ Retrieve all active doctors (not archived)
@@ -116,68 +198,6 @@ class DoctorController extends Controller
         }
     }
 
-    /**
-     * ✅ Update doctor details and available days
-     */
-    public function updateDoctor(Request $request, $id)
-    {
-        try {
-            $doctor = Doctor::where('is_archived', 0)->find($id);
-
-            if (!$doctor) {
-                return response()->json([
-                    'isSuccess' => false,
-                    'message'   => 'Doctor not found or archived.',
-                ], 404);
-            }
-
-            $validated = $request->validate([
-                'doctor_name'         => 'required|string|max:255',
-                'email'               => 'required|email|unique:doctors,email,' . $id,
-                'password'            => 'nullable|string|min:6',
-                'specialization_id'   => 'required|integer|exists:specializations,id',
-                'years_of_experience' => 'required|integer|min:0',
-                'consultation_fee'    => 'required|numeric|min:0',
-                'qualifications'      => 'required|string|max:255',
-                'available_days'      => 'required|array|min:1',
-                'available_days.*'    => 'string|max:50',
-            ]);
-
-            $updateData = [
-                'doctor_name'         => $validated['doctor_name'],
-                'email'               => $validated['email'],
-                'specialization_id'   => $validated['specialization_id'],
-                'years_of_experience' => $validated['years_of_experience'],
-                'consultation_fee'    => $validated['consultation_fee'],
-                'qualifications'      => $validated['qualifications'],
-            ];
-
-            if (!empty($validated['password'])) {
-                $updateData['password'] = Hash::make($validated['password']);
-            }
-
-            $doctor->update($updateData);
-
-            $doctor->availableDays()->delete();
-            foreach ($validated['available_days'] as $day) {
-                $doctor->availableDays()->create(['day_of_week' => $day]);
-            }
-
-            $doctor->load(['specialization', 'availableDays']);
-
-            return response()->json([
-                'isSuccess' => true,
-                'message'   => 'Doctor updated successfully.',
-                'data'      => $doctor,
-            ]);
-        } catch (Exception $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message'   => 'Failed to update doctor.',
-                'error'     => $e->getMessage(),
-            ], 500);
-        }
-    }
 
     /**
      * ✅ Get appointments for the logged-in doctor
@@ -290,5 +310,31 @@ class DoctorController extends Controller
                 'error'     => $e->getMessage(),
             ], 500);
         }
+    }
+
+    //HELPER FUNCTION TO SAVE FILES
+    private function saveFileToPublic(Request $request, $field, $prefix)
+    {
+        // Check if file exists in the request
+        if ($request->hasFile($field)) {
+            $file = $request->file($field);
+
+            // Create directory inside /public if not exists
+            $directory = public_path('hms_files');
+            if (!file_exists($directory)) {
+                mkdir($directory, 0755, true);
+            }
+
+            // Generate unique filename with prefix
+            $filename = $prefix . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+
+            // Move uploaded file to /public/pos_files
+            $file->move($directory, $filename);
+
+            // Return relative path (to store in database)
+            return 'hms_files/' . $filename;
+        }
+
+        return null;
     }
 }

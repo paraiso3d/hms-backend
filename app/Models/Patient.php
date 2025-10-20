@@ -13,6 +13,7 @@ class Patient extends Authenticatable
 
     protected $fillable = [
         'full_name',
+        'profile_img',
         'age',
         'gender',
         'email',

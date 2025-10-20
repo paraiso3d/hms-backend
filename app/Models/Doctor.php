@@ -12,6 +12,7 @@ class Doctor extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
+        'profile_img',
         'doctor_name',
         'email',
         'password',

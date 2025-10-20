@@ -6,6 +6,8 @@ use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\Patient;
 use Illuminate\Http\Request;
+
+
 use Exception;
 
 class AppointmentController extends Controller
@@ -25,7 +27,13 @@ class AppointmentController extends Controller
                 'notes'             => 'nullable|string',
             ]);
 
-            $validated['status'] = 'Pending'; //
+            // 🩺 Auto-generate Appointment Number
+            $latestAppointment = Appointment::latest('id')->first();
+            $nextNumber = $latestAppointment ? $latestAppointment->id + 1 : 1;
+            $appointmentNo = 'PATIENT' . str_pad($nextNumber, 2, '0', STR_PAD_LEFT);
+
+            $validated['appointment_no'] = $appointmentNo;
+            $validated['status'] = 'Pending';
 
             $appointment = Appointment::create($validated);
 
@@ -42,6 +50,7 @@ class AppointmentController extends Controller
             ], 500);
         }
     }
+
 
     /**
      * ✅ Get all appointments
