@@ -7,9 +7,18 @@ use App\Http\Controllers\SpecializationController;
 use App\Http\Controllers\DoctorController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\AppointmentController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\MedicalRecordController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\DropdownController;
+
+
+
+// ---------------------
+// Specialization Routes
+// ---------------------
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 
 
 
