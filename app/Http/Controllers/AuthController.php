@@ -110,6 +110,11 @@ class AuthController extends Controller
                     'full_name' => $user->full_name,
                     'email' => $user->email,
                     'role' => 'Patient',
+                    'profile_img' => $user->profile_img,
+                    'phone_number' => $user->phone_number,
+                    'address' => $user->address,
+                    'age' => $user->age,
+                    'gender' => $user->gender,
                 ];
 
             default:
