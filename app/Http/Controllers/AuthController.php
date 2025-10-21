@@ -7,11 +7,12 @@ use App\Models\User;
 use App\Models\Doctor;
 use App\Models\Patient;
 use Illuminate\Support\Facades\Hash;
+use Exception;
 
 class AuthController extends Controller
 {
     /**
-     * 🧠 Universal Login
+     * Universal Login
      */
     public function login(Request $request)
     {
@@ -25,7 +26,7 @@ class AuthController extends Controller
         $role = null;
 
         /**
-         * 🧍 Admin Login (users table)
+         *  Admin Login (users table)
          */
         if ($request->username) {
             $user = User::where('username', $request->username)->first();
@@ -33,7 +34,7 @@ class AuthController extends Controller
         }
 
         /**
-         * 🩺 Doctor Login (doctors table)
+         *  Doctor Login (doctors table)
          */
         if (!$user && $request->email) {
             $user = Doctor::where('email', $request->email)->first();
@@ -41,7 +42,7 @@ class AuthController extends Controller
         }
 
         /**
-         * 🧑‍🤝‍🧑 Patient Login (patients table)
+         * 🧑‍🤝‍🧑Patient Login (patients table)
          */
         if (!$user && $request->email) {
             $user = Patient::where('email', $request->email)->first();
@@ -69,7 +70,7 @@ class AuthController extends Controller
     }
 
     /**
-     * 🚪 Logout
+     *  Logout
      */
     public function logout(Request $request)
     {
@@ -82,7 +83,7 @@ class AuthController extends Controller
     }
 
     /**
-     * 🧾 Format response data depending on user type
+     *  Format response data depending on user type
      */
     private function formatUserResponse($user, $role)
     {
