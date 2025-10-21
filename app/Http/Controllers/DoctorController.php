@@ -83,7 +83,7 @@ class DoctorController extends Controller
             $validated = $request->validate([
                 'doctor_name'         => 'required|string|max:255',
                 'email'               => 'required|email|unique:doctors,email,' . $id,
-                'password'            => 'nullable|string|min:6',
+                'password'            => 'nullable|string|min:6|confirmed',
                 'specialization_id'   => 'required|integer|exists:specializations,id',
                 'years_of_experience' => 'required|integer|min:0',
                 'consultation_fee'    => 'required|numeric|min:0',
