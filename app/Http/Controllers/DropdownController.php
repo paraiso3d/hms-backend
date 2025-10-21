@@ -38,7 +38,7 @@ class DropdownController extends Controller
     }
 
     /**
-     * 🧍‍♂️ Patients dropdown
+     *  Patients dropdown
      */
     public function getPatients()
     {
@@ -47,7 +47,7 @@ class DropdownController extends Controller
     }
 
     /**
-     * 👨‍⚕️ Doctors dropdown
+     *  Doctors dropdown
      */
     public function getDoctors()
     {
@@ -56,7 +56,7 @@ class DropdownController extends Controller
     }
 
     /**
-     * 🩺 Specializations dropdown
+     *  Specializations dropdown
      */
     public function getSpecializations()
     {
@@ -65,7 +65,7 @@ class DropdownController extends Controller
     }
 
     /**
-     * 📅 Appointments dropdown
+     *  Appointments dropdown
      */
     public function getAppointments()
     {
@@ -80,7 +80,7 @@ class DropdownController extends Controller
     }
 
     /**
-     * 🧠 Get doctors filtered by specialization
+     *  Get doctors filtered by specialization
      */
     public function getDoctorsBySpecialization($specializationId)
     {

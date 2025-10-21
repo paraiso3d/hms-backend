@@ -4,15 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Models\MedicalRecord;
 use Illuminate\Http\Request;
+use Exception;
 
 class MedicalRecordController extends Controller
 {
     /**
-     * ✅ Get all medical records with related patient and doctor info
+     * ✅ Get all medical records (excluding archived)
      */
     public function getMedicalRecords()
     {
-        $records = MedicalRecord::with(['patient', 'doctor'])->get();
+        $records = MedicalRecord::with(['patient', 'doctor'])
+            ->where('is_archived', 0)
+            ->get();
 
         return response()->json([
             'isSuccess' => true,
@@ -44,6 +47,8 @@ class MedicalRecordController extends Controller
                 'record_date'        => 'required|date',
             ]);
 
+            $validated['is_archived'] = 0; // always default to not archived
+
             $record = MedicalRecord::create($validated);
 
             return response()->json([
@@ -51,7 +56,7 @@ class MedicalRecordController extends Controller
                 'message'   => 'Medical record created successfully!',
                 'data'      => $record
             ], 201);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'isSuccess' => false,
                 'message'   => 'Failed to create medical record.',
@@ -61,11 +66,21 @@ class MedicalRecordController extends Controller
     }
 
     /**
-     * ✅ Get a specific medical record by ID
+     * ✅ Get a specific medical record by ID (excluding archived)
      */
     public function getMedicalRecordById($id)
     {
-        $record = MedicalRecord::with(['patient', 'doctor'])->findOrFail($id);
+        $record = MedicalRecord::with(['patient', 'doctor'])
+            ->where('id', $id)
+            ->where('is_archived', 0)
+            ->first();
+
+        if (!$record) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Medical record not found or archived.'
+            ], 404);
+        }
 
         return response()->json([
             'isSuccess' => true,
@@ -78,7 +93,16 @@ class MedicalRecordController extends Controller
      */
     public function updateMedicalRecord(Request $request, $id)
     {
-        $record = MedicalRecord::findOrFail($id);
+        $record = MedicalRecord::where('id', $id)
+            ->where('is_archived', 0)
+            ->first();
+
+        if (!$record) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Medical record not found or archived.'
+            ], 404);
+        }
 
         $validated = $request->validate([
             'diagnosis' => 'sometimes|required|string',
@@ -97,16 +121,33 @@ class MedicalRecordController extends Controller
     }
 
     /**
-     * ✅ Delete a specific medical record
+     * ✅ Archive (soft delete) a medical record
      */
     public function deleteMedicalRecord($id)
     {
-        $record = MedicalRecord::findOrFail($id);
-        $record->delete();
+        try {
+            $record = MedicalRecord::find($id);
 
-        return response()->json([
-            'isSuccess' => true,
-            'message' => 'Medical record deleted successfully.'
-        ]);
+            if (!$record) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'Medical record not found.',
+                ], 404);
+            }
+
+            $record->is_archived = 1;
+            $record->save();
+
+            return response()->json([
+                'isSuccess' => true,
+                'message' => 'Medical record archived successfully.',
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Failed to archive medical record.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }

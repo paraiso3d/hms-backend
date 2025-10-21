@@ -13,5 +13,6 @@ class Specialization extends Model
         'specialization_name',
         'description',
         'common_conditions',
+        'is_archived'
     ];
 }

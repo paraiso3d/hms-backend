@@ -6,8 +6,6 @@ use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\Patient;
 use Illuminate\Http\Request;
-
-
 use Exception;
 
 class AppointmentController extends Controller
@@ -34,6 +32,7 @@ class AppointmentController extends Controller
 
             $validated['appointment_no'] = $appointmentNo;
             $validated['status'] = 'Pending';
+            $validated['is_archived'] = 0; // make sure it’s set to active
 
             $appointment = Appointment::create($validated);
 
@@ -51,13 +50,13 @@ class AppointmentController extends Controller
         }
     }
 
-
     /**
-     * ✅ Get all appointments
+     * ✅ Get all active (non-archived) appointments
      */
     public function getAppointments()
     {
         $appointments = Appointment::with(['patient', 'doctor'])
+            ->where('is_archived', 0)
             ->orderBy('appointment_date', 'desc')
             ->get();
 
@@ -68,7 +67,7 @@ class AppointmentController extends Controller
     }
 
     /**
-     * ✅ Get appointment by ID
+     * ✅ Get appointment by ID (including archived)
      */
     public function getAppointmentById($id)
     {
@@ -93,12 +92,12 @@ class AppointmentController extends Controller
      */
     public function updateAppointment(Request $request, $id)
     {
-        $appointment = Appointment::find($id);
+        $appointment = Appointment::where('is_archived', 0)->find($id);
 
         if (!$appointment) {
             return response()->json([
                 'isSuccess' => false,
-                'message' => 'Appointment not found.',
+                'message' => 'Appointment not found or has been archived.',
             ], 404);
         }
 
@@ -118,29 +117,73 @@ class AppointmentController extends Controller
         ]);
     }
 
-
-
-
-
     /**
-     * 🗑️ Delete appointment
+     * 🚮 Soft delete appointment (archive)
      */
     public function deleteAppointment($id)
     {
-        $appointment = Appointment::find($id);
+        try {
+            $appointment = Appointment::find($id);
 
-        if (!$appointment) {
+            if (!$appointment) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'Appointment not found.',
+                ], 404);
+            }
+
+            // Mark as archived
+            $appointment->is_archived = 1;
+            $appointment->save();
+
+            return response()->json([
+                'isSuccess' => true,
+                'message' => 'Appointment archived successfully.',
+            ]);
+        } catch (Exception $e) {
             return response()->json([
                 'isSuccess' => false,
-                'message' => 'Appointment not found.',
-            ], 404);
+                'message' => 'Failed to archive appointment.',
+                'error' => $e->getMessage(),
+            ], 500);
         }
+    }
 
-        $appointment->delete();
+    /**
+     * 🔄 Restore archived appointment (optional helper)
+     */
+    public function restoreAppointment($id)
+    {
+        try {
+            $appointment = Appointment::find($id);
 
-        return response()->json([
-            'isSuccess' => true,
-            'message' => 'Appointment deleted successfully.',
-        ]);
+            if (!$appointment) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'Appointment not found.',
+                ], 404);
+            }
+
+            if ($appointment->is_archived == 0) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'Appointment is already active.',
+                ]);
+            }
+
+            $appointment->is_archived = 0;
+            $appointment->save();
+
+            return response()->json([
+                'isSuccess' => true,
+                'message' => 'Appointment restored successfully.',
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Failed to restore appointment.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }

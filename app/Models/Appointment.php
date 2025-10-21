@@ -17,6 +17,7 @@ class Appointment extends Model
         'appointment_time',
         'status',
         'reason_for_visit',
+        'is_archived',
         'notes',
     ];
 

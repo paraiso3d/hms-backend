@@ -15,6 +15,7 @@ class MedicalRecord extends Model
         'diagnosis',
         'treatment',
         'notes',
+        'is_archived',
         'date_recorded',
     ];
 

@@ -16,6 +16,7 @@ class Payment extends Model
         'payment_method',
         'payment_status',
         'transaction_date',
+        'is_archived',
         'remarks',
     ];
 

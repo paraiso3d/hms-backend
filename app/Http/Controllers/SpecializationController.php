@@ -9,7 +9,7 @@ use Exception;
 class SpecializationController extends Controller
 {
     /**
-     * ✅ Create a new specialization
+     * 🩺 Create a new specialization
      */
     public function createSpecialization(Request $request)
     {
@@ -21,8 +21,9 @@ class SpecializationController extends Controller
                 'common_conditions.*' => 'string|max:255',
             ]);
 
-            // Convert array to comma-separated string before saving
+            // Convert array to comma-separated string
             $validated['common_conditions'] = implode(', ', $validated['common_conditions']);
+            $validated['is_archived'] = 0; // default active
 
             $specialization = Specialization::create($validated);
 
@@ -40,14 +41,15 @@ class SpecializationController extends Controller
         }
     }
 
-
     /**
-     * ✅ Retrieve all specializations
+     * 📋 Retrieve all active (non-archived) specializations
      */
     public function getSpecializations()
     {
         try {
-            $specializations = Specialization::orderBy('created_at', 'desc')->get();
+            $specializations = Specialization::where('is_archived', 0)
+                ->orderBy('created_at', 'desc')
+                ->get();
 
             if ($specializations->isEmpty()) {
                 return response()->json([
@@ -57,7 +59,7 @@ class SpecializationController extends Controller
                 ]);
             }
 
-            // Convert comma-separated string back to array
+            // Convert comma-separated string to array
             $specializations->transform(function ($item) {
                 $item->common_conditions = array_map('trim', explode(',', $item->common_conditions));
                 return $item;
@@ -77,23 +79,23 @@ class SpecializationController extends Controller
         }
     }
 
-
     /**
-     * ✅ Retrieve a single specialization by ID
+     * 🔍 Retrieve a single specialization by ID (only if not archived)
      */
     public function getSpecializationById($id)
     {
         try {
-            $specialization = Specialization::find($id);
+            $specialization = Specialization::where('id', $id)
+                ->where('is_archived', 0)
+                ->first();
 
             if (!$specialization) {
                 return response()->json([
                     'isSuccess' => false,
-                    'message' => 'Specialization not found.',
+                    'message' => 'Specialization not found or archived.',
                 ], 404);
             }
 
-            // Decode common_conditions into an array
             $specialization->common_conditions = array_map('trim', explode(',', $specialization->common_conditions));
 
             return response()->json([
@@ -110,19 +112,20 @@ class SpecializationController extends Controller
         }
     }
 
-
     /**
-     * ✅ Update an existing specialization
+     * ✏️ Update an existing specialization (only if active)
      */
     public function updateSpecialization(Request $request, $id)
     {
         try {
-            $specialization = Specialization::find($id);
+            $specialization = Specialization::where('id', $id)
+                ->where('is_archived', 0)
+                ->first();
 
             if (!$specialization) {
                 return response()->json([
                     'isSuccess' => false,
-                    'message' => 'Specialization not found.',
+                    'message' => 'Specialization not found or archived.',
                 ], 404);
             }
 
@@ -133,7 +136,6 @@ class SpecializationController extends Controller
                 'common_conditions.*' => 'string|max:255',
             ]);
 
-            // Convert array to comma-separated string
             $validated['common_conditions'] = implode(', ', $validated['common_conditions']);
 
             $specialization->update($validated);
@@ -151,10 +153,9 @@ class SpecializationController extends Controller
             ], 500);
         }
     }
-    //TEST
 
     /**
-     * ✅ Delete a specialization
+     * 🗑️ Soft delete (archive) a specialization
      */
     public function deleteSpecialization($id)
     {
@@ -168,16 +169,17 @@ class SpecializationController extends Controller
                 ], 404);
             }
 
-            $specialization->delete();
+            $specialization->is_archived = 1;
+            $specialization->save();
 
             return response()->json([
                 'isSuccess' => true,
-                'message' => 'Specialization deleted successfully.',
+                'message' => 'Specialization archived successfully.',
             ]);
         } catch (Exception $e) {
             return response()->json([
                 'isSuccess' => false,
-                'message' => 'Failed to delete specialization.',
+                'message' => 'Failed to archive specialization.',
                 'error' => $e->getMessage(),
             ], 500);
         }

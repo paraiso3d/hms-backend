@@ -9,20 +9,23 @@ use Exception;
 class PaymentController extends Controller
 {
     /**
-     * ✅ Create a new payment record
+     * 💰 Create a new payment record
      */
     public function createPayment(Request $request)
     {
         try {
             $validated = $request->validate([
-                'patient_id'      => 'required|exists:patients,id',
-                'appointment_id'  => 'nullable|exists:appointments,id',
-                'amount'          => 'required|numeric|min:0',
-                'payment_method'  => 'required|string|in:Cash,Card,Online,Insurance',
-                'payment_status'  => 'required|string|in:Pending,Paid,Failed,Refunded',
+                'patient_id'       => 'required|exists:patients,id',
+                'appointment_id'   => 'nullable|exists:appointments,id',
+                'amount'           => 'required|numeric|min:0',
+                'payment_method'   => 'required|string|in:Cash,Card,Online,Insurance',
+                'payment_status'   => 'required|string|in:Pending,Paid,Failed,Refunded',
                 'transaction_date' => 'required|date',
-                'remarks'         => 'nullable|string',
+                'remarks'          => 'nullable|string',
             ]);
+
+            // Ensure is_archived defaults to 0
+            $validated['is_archived'] = 0;
 
             $payment = Payment::create($validated);
 
@@ -41,11 +44,12 @@ class PaymentController extends Controller
     }
 
     /**
-     * ✅ Get all payments
+     * 📋 Get all active payments (excluding archived)
      */
     public function getPayments()
     {
         $payments = Payment::with(['patient', 'appointment'])
+            ->where('is_archived', 0)
             ->orderBy('transaction_date', 'desc')
             ->get();
 
@@ -56,16 +60,19 @@ class PaymentController extends Controller
     }
 
     /**
-     * ✅ Get payment by ID
+     * 🔍 Get payment by ID (only if not archived)
      */
     public function getPaymentById($id)
     {
-        $payment = Payment::with(['patient', 'appointment'])->find($id);
+        $payment = Payment::with(['patient', 'appointment'])
+            ->where('id', $id)
+            ->where('is_archived', 0)
+            ->first();
 
         if (!$payment) {
             return response()->json([
                 'isSuccess' => false,
-                'message' => 'Payment record not found.'
+                'message' => 'Payment record not found or archived.'
             ], 404);
         }
 
@@ -76,25 +83,27 @@ class PaymentController extends Controller
     }
 
     /**
-     * ✅ Update payment record
+     * ✏️ Update payment record (only if active)
      */
     public function updatePayment(Request $request, $id)
     {
-        $payment = Payment::find($id);
+        $payment = Payment::where('id', $id)
+            ->where('is_archived', 0)
+            ->first();
 
         if (!$payment) {
             return response()->json([
                 'isSuccess' => false,
-                'message' => 'Payment record not found.'
+                'message' => 'Payment record not found or archived.'
             ], 404);
         }
 
         $validated = $request->validate([
-            'amount'          => 'required|numeric|min:0',
-            'payment_method'  => 'required|string|in:Cash,Card,Online,Insurance',
-            'payment_status'  => 'required|string|in:Pending,Paid,Failed,Refunded',
+            'amount'           => 'required|numeric|min:0',
+            'payment_method'   => 'required|string|in:Cash,Card,Online,Insurance',
+            'payment_status'   => 'required|string|in:Pending,Paid,Failed,Refunded',
             'transaction_date' => 'required|date',
-            'remarks'         => 'nullable|string',
+            'remarks'          => 'nullable|string',
         ]);
 
         $payment->update($validated);
@@ -107,24 +116,33 @@ class PaymentController extends Controller
     }
 
     /**
-     * ✅ Delete payment record
+     * 🗑️ Soft delete (archive) payment record
      */
     public function deletePayment($id)
     {
-        $payment = Payment::find($id);
+        try {
+            $payment = Payment::find($id);
 
-        if (!$payment) {
+            if (!$payment) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'Payment record not found.',
+                ], 404);
+            }
+
+            $payment->is_archived = 1;
+            $payment->save();
+
+            return response()->json([
+                'isSuccess' => true,
+                'message' => 'Payment archived successfully.',
+            ]);
+        } catch (Exception $e) {
             return response()->json([
                 'isSuccess' => false,
-                'message' => 'Payment record not found.'
-            ], 404);
+                'message' => 'Failed to archive payment record.',
+                'error' => $e->getMessage(),
+            ], 500);
         }
-
-        $payment->delete();
-
-        return response()->json([
-            'isSuccess' => true,
-            'message' => 'Payment deleted successfully.'
-        ]);
     }
 }
