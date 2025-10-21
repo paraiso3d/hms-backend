@@ -24,10 +24,13 @@ class DoctorController extends Controller
                 'years_of_experience' => 'required|integer|min:0',
                 'consultation_fee'    => 'required|numeric|min:0',
                 'qualifications'      => 'required|string|max:255',
+                'about'               => 'nullable|string',
+                'university_graduated' => 'nullable|string|max:255',
                 'available_days'      => 'required|array|min:1',
                 'available_days.*'    => 'string|max:50',
-                'profile_img'         => 'nullable|image|mimes:jpeg,png,jpg|max:2048', // 🖼️ Validate image
+                'profile_img'         => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             ]);
+
 
             // 📁 Save uploaded profile image
             $profilePath = $this->saveFileToPublic($request, 'profile_img', 'doctor');
@@ -40,10 +43,13 @@ class DoctorController extends Controller
                 'years_of_experience' => $validated['years_of_experience'],
                 'consultation_fee'    => $validated['consultation_fee'],
                 'qualifications'      => $validated['qualifications'],
+                'about'               => $validated['about'] ?? null,
+                'university_graduated' => $validated['university_graduated'] ?? null,
                 'role'                => 'Doctor',
-                'profile_img'         => $profilePath, // 🧩 Insert image path
+                'profile_img'         => $profilePath,
                 'is_archived'         => 0,
             ]);
+
 
             // 🗓️ Store available days
             foreach ($validated['available_days'] as $day) {
@@ -88,6 +94,8 @@ class DoctorController extends Controller
                 'years_of_experience' => 'required|integer|min:0',
                 'consultation_fee'    => 'required|numeric|min:0',
                 'qualifications'      => 'required|string|max:255',
+                'about'               => 'nullable|string',
+                'university_graduated' => 'nullable|string|max:255',
                 'available_days'      => 'required|array|min:1',
                 'available_days.*'    => 'string|max:50',
                 'profile_img'         => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
@@ -100,7 +108,10 @@ class DoctorController extends Controller
                 'years_of_experience' => $validated['years_of_experience'],
                 'consultation_fee'    => $validated['consultation_fee'],
                 'qualifications'      => $validated['qualifications'],
+                'about'               => $validated['about'] ?? $doctor->about,
+                'university_graduated' => $validated['university_graduated'] ?? $doctor->university_graduated,
             ];
+
 
             // 🔐 Update password if provided
             if (!empty($validated['password'])) {

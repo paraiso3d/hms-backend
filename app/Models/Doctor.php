@@ -20,6 +20,8 @@ class Doctor extends Authenticatable
         'years_of_experience',
         'consultation_fee',
         'qualifications',
+        'about',
+        'university_graduated',
         'role',
         'is_archived',
     ];
