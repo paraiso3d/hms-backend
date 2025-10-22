@@ -53,18 +53,46 @@ class AppointmentController extends Controller
     /**
      * ✅ Get all active (non-archived) appointments
      */
-    public function getAppointments()
+    public function getAppointments(Request $request)
     {
-        $appointments = Appointment::with(['patient', 'doctor'])
-            ->where('is_archived', 0)
-            ->orderBy('appointment_date', 'desc')
-            ->get();
+        try {
+            $search = $request->input('search');
+            $perPage = $request->input('per_page', 10); // Default to 10 per page
 
-        return response()->json([
-            'isSuccess' => true,
-            'data' => $appointments,
-        ]);
+            $query = Appointment::with(['patient', 'doctor'])
+                ->where('is_archived', 0);
+
+            // Search logic — matches patient name, doctor name, or appointment date
+            if (!empty($search)) {
+                $query->where(function ($q) use ($search) {
+                    $q->whereHas('patient', function ($sub) use ($search) {
+                        $sub->where('patient_name', 'like', "%{$search}%");
+                    })
+                        ->orWhereHas('doctor', function ($sub) use ($search) {
+                            $sub->where('doctor_name', 'like', "%{$search}%");
+                        })
+                        ->orWhere('appointment_date', 'like', "%{$search}%")
+                        ->orWhere('status', 'like', "%{$search}%");
+                });
+            }
+
+            // Paginate and order results
+            $appointments = $query
+                ->orderBy('appointment_date', 'desc')
+                ->paginate($perPage);
+
+            return response()->json([
+                'isSuccess' => true,
+                'data' => $appointments,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Error retrieving appointments: ' . $e->getMessage(),
+            ], 500);
+        }
     }
+
 
     /**
      * ✅ Get appointment by ID (including archived)
