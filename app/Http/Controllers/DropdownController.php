@@ -62,8 +62,7 @@ class DropdownController extends Controller
     public function getSpecializations(Request $request)
     {
         try {
-            $search  = $request->input('search');
-            $perPage = $request->input('per_page', 10); // Default items per page
+            $search = $request->input('search');
 
             $query = Specialization::select('id', 'specialization_name')
                 ->where('is_archived', 0)
@@ -74,23 +73,14 @@ class DropdownController extends Controller
                 $query->where('specialization_name', 'like', "%{$search}%");
             }
 
-            // ⚡ Cursor pagination for smooth dropdowns
-            $specializations = $query->cursorPaginate($perPage);
+            $specializations = $query->get();
 
             return response()->json([
                 'isSuccess' => true,
                 'message' => $specializations->isEmpty()
                     ? 'No specializations found.'
                     : 'Specializations retrieved successfully.',
-                'specializations' => $specializations->items(), // Actual data only
-
-                // 📄 Minimal pagination data (no URLs)
-                'pagination' => [
-                    'per_page'       => $specializations->perPage(),
-                    'next_cursor'    => optional($specializations->nextCursor())->encode(),
-                    'prev_cursor'    => optional($specializations->previousCursor())->encode(),
-                    'has_more_pages' => $specializations->hasMorePages(),
-                ],
+                'specializations' => $specializations,
             ]);
         } catch (Exception $e) {
             return response()->json([
@@ -100,6 +90,7 @@ class DropdownController extends Controller
             ], 500);
         }
     }
+
 
 
     /**

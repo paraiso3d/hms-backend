@@ -11,7 +11,7 @@ use Exception;
 class DoctorController extends Controller
 {
     /**
-     * ✅ Register a new doctor (with available days + login credentials)
+     *  Register a new doctor
      */
     public function createDoctor(Request $request)
     {
@@ -154,7 +154,7 @@ class DoctorController extends Controller
 
 
     /**
-     * ✅ Retrieve all active doctors (not archived)
+     * Retrieve all active doctors 
      */
     public function getDoctors(Request $request)
     {
@@ -216,7 +216,7 @@ class DoctorController extends Controller
 
 
     /**
-     * ✅ Retrieve a single doctor by ID
+     * Retrieve a single doctor by ID
      */
     public function getDoctorById($id)
     {
@@ -248,7 +248,7 @@ class DoctorController extends Controller
 
 
     /**
-     * ✅ Get appointments for the logged-in doctor
+     * Get appointments for the logged-in doctor
      */
     public function getMyAppointments(Request $request)
     {
@@ -354,7 +354,7 @@ class DoctorController extends Controller
     }
 
     /**
-     * ✅ Soft delete doctor (set is_archived = 1)
+     *  Soft delete doctor
      */
     public function deleteDoctor($id)
     {

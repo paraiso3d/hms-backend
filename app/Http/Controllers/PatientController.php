@@ -74,6 +74,7 @@ class PatientController extends Controller
                 $patient->profile_img = $patient->profile_img
                     ? asset($patient->profile_img)
                     : asset('default-profile.jpg');
+
                 return $patient;
             });
 
