@@ -49,18 +49,44 @@ class PatientController extends Controller
         }
     }
 
-    // Retrieve all active (non-archived) patients
-    public function getPatients()
+    public function getPatients(Request $request)
     {
-        $patients = Patient::where('is_archived', 0)
-            ->orderBy('created_at', 'desc')
-            ->get();
+        try {
+            $search  = $request->input('search');
+            $perPage = $request->input('per_page', 10); // Default 10 per page
 
-        return response()->json([
-            'isSuccess' => true,
-            'data'      => $patients
-        ]);
+            $query = Patient::where('is_archived', 0)
+                ->orderBy('created_at', 'desc');
+
+            // 🔍 Search by patient name, email, contact number, or address
+            if (!empty($search)) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('patient_name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('contact_number', 'like', "%{$search}%")
+                        ->orWhere('address', 'like', "%{$search}%");
+                });
+            }
+
+            // 📄 Apply pagination
+            $patients = $query->paginate($perPage);
+
+            return response()->json([
+                'isSuccess' => true,
+                'message'   => $patients->isEmpty()
+                    ? 'No patients found.'
+                    : 'Patients retrieved successfully.',
+                'data'      => $patients,
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message'   => 'Failed to retrieve patients.',
+                'error'     => $e->getMessage(),
+            ], 500);
+        }
     }
+
 
     // Retrieve a single patient by ID
     public function getPatientById($id)

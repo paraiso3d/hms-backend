@@ -11,17 +11,50 @@ class MedicalRecordController extends Controller
     /**
      * ✅ Get all medical records (excluding archived)
      */
-    public function getMedicalRecords()
+    public function getMedicalRecords(Request $request)
     {
-        $records = MedicalRecord::with(['patient', 'doctor'])
-            ->where('is_archived', 0)
-            ->get();
+        try {
+            $search  = $request->input('search');
+            $perPage = $request->input('per_page', 10); // Default 10 per page
 
-        return response()->json([
-            'isSuccess' => true,
-            'data' => $records
-        ]);
+            $query = MedicalRecord::with(['patient', 'doctor'])
+                ->where('is_archived', 0)
+                ->orderBy('created_at', 'desc');
+
+            // 🔍 Search across patient name, doctor name, diagnosis, treatment, and record date
+            if (!empty($search)) {
+                $query->where(function ($q) use ($search) {
+                    $q->whereHas('patient', function ($sub) use ($search) {
+                        $sub->where('patient_name', 'like', "%{$search}%");
+                    })
+                        ->orWhereHas('doctor', function ($sub) use ($search) {
+                            $sub->where('doctor_name', 'like', "%{$search}%");
+                        })
+                        ->orWhere('diagnosis', 'like', "%{$search}%")
+                        ->orWhere('treatment', 'like', "%{$search}%")
+                        ->orWhere('record_date', 'like', "%{$search}%");
+                });
+            }
+
+            // 📄 Apply pagination
+            $records = $query->paginate($perPage);
+
+            return response()->json([
+                'isSuccess' => true,
+                'message'   => $records->isEmpty()
+                    ? 'No medical records found.'
+                    : 'Medical records retrieved successfully.',
+                'data'      => $records,
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message'   => 'Failed to retrieve medical records.',
+                'error'     => $e->getMessage(),
+            ], 500);
+        }
     }
+
 
     /**
      * ✅ Create a new medical record

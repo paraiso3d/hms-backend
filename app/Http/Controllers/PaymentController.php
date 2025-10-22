@@ -46,18 +46,51 @@ class PaymentController extends Controller
     /**
      * 📋 Get all active payments (excluding archived)
      */
-    public function getPayments()
+    public function getPayments(Request $request)
     {
-        $payments = Payment::with(['patient', 'appointment'])
-            ->where('is_archived', 0)
-            ->orderBy('transaction_date', 'desc')
-            ->get();
+        try {
+            $search  = $request->input('search');
+            $perPage = $request->input('per_page', 10); // Default 10 per page
 
-        return response()->json([
-            'isSuccess' => true,
-            'data' => $payments
-        ]);
+            $query = Payment::with(['patient', 'appointment'])
+                ->where('is_archived', 0)
+                ->orderBy('transaction_date', 'desc');
+
+            // 🔍 Search logic: patient name, appointment date, or payment fields
+            if (!empty($search)) {
+                $query->where(function ($q) use ($search) {
+                    $q->whereHas('patient', function ($sub) use ($search) {
+                        $sub->where('patient_name', 'like', "%{$search}%");
+                    })
+                        ->orWhereHas('appointment', function ($sub) use ($search) {
+                            $sub->where('appointment_date', 'like', "%{$search}%");
+                        })
+                        ->orWhere('payment_method', 'like', "%{$search}%")
+                        ->orWhere('reference_no', 'like', "%{$search}%")
+                        ->orWhere('amount', 'like', "%{$search}%")
+                        ->orWhere('status', 'like', "%{$search}%");
+                });
+            }
+
+            // 📄 Apply pagination
+            $payments = $query->paginate($perPage);
+
+            return response()->json([
+                'isSuccess' => true,
+                'message'   => $payments->isEmpty()
+                    ? 'No payments found.'
+                    : 'Payments retrieved successfully.',
+                'data'      => $payments,
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message'   => 'Failed to retrieve payments.',
+                'error'     => $e->getMessage(),
+            ], 500);
+        }
     }
+
 
     /**
      * 🔍 Get payment by ID (only if not archived)
