@@ -48,7 +48,6 @@ class PatientController extends Controller
             ], 500);
         }
     }
-
     public function getPatients(Request $request)
     {
         try {
@@ -58,6 +57,7 @@ class PatientController extends Controller
             $query = Patient::where('is_archived', 0)
                 ->orderBy('created_at', 'desc');
 
+            // 🔍 Search logic
             if (!empty($search)) {
                 $query->where(function ($q) use ($search) {
                     $q->where('patient_name', 'like', "%{$search}%")
@@ -68,6 +68,14 @@ class PatientController extends Controller
             }
 
             $patients = $query->paginate($perPage);
+
+            // 🖼️ Transform to include asset URLs for profile images
+            $patients->getCollection()->transform(function ($patient) {
+                $patient->profile_img = $patient->profile_img
+                    ? asset($patient->profile_img)
+                    : asset('default-profile.png');
+                return $patient;
+            });
 
             return response()->json([
                 'isSuccess' => true,
@@ -91,6 +99,7 @@ class PatientController extends Controller
             ], 500);
         }
     }
+
 
 
 
