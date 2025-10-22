@@ -87,12 +87,18 @@ class AuthController extends Controller
      */
     private function formatUserResponse($user, $role)
     {
+        // helper to build full image URL
+        $getProfileImg = function ($path) {
+            return $path ? asset($path) : asset('default-profile.png');
+        };
+
         switch ($role) {
             case 'Admin':
                 return [
                     'id' => $user->id,
                     'username' => $user->username,
                     'role' => 'Admin',
+                    'profile_img' => $getProfileImg($user->profile_img ?? null),
                 ];
 
             case 'Doctor':
@@ -102,6 +108,7 @@ class AuthController extends Controller
                     'email' => $user->email,
                     'role' => 'Doctor',
                     'specialization_id' => $user->specialization_id,
+                    'profile_img' => $getProfileImg($user->profile_img ?? null),
                 ];
 
             case 'Patient':
@@ -110,7 +117,7 @@ class AuthController extends Controller
                     'full_name' => $user->full_name,
                     'email' => $user->email,
                     'role' => 'Patient',
-                    'profile_img' => $user->profile_img,
+                    'profile_img' => $getProfileImg($user->profile_img ?? null),
                     'phone_number' => $user->phone_number,
                     'address' => $user->address,
                     'age' => $user->age,
