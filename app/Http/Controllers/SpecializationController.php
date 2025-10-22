@@ -127,7 +127,7 @@ class SpecializationController extends Controller
     }
 
     /**
-     * ✏️ Update an existing specialization (only if active)
+     * Update an existing specialization (only if active)
      */
     public function updateSpecialization(Request $request, $id)
     {
