@@ -174,7 +174,7 @@ class PatientController extends Controller
     public function getMyAppointments(Request $request)
     {
         try {
-            $patient = auth()->user(); // 🧠 Get logged-in patient
+            $patient = auth()->user(); // Get logged-in patient
 
             if (!$patient) {
                 return response()->json([
