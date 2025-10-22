@@ -73,7 +73,7 @@ class PatientController extends Controller
             $patients->getCollection()->transform(function ($patient) {
                 $patient->profile_img = $patient->profile_img
                     ? asset($patient->profile_img)
-                    : asset('default-profile.png');
+                    : asset('default-profile.jpg');
                 return $patient;
             });
 
