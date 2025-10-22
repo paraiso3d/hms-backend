@@ -169,6 +169,87 @@ class PatientController extends Controller
         ]);
     }
 
+
+
+    public function getMyAppointments(Request $request)
+    {
+        try {
+            $patient = auth()->user(); // 🧠 Get logged-in patient
+
+            if (!$patient) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'Unauthorized access.',
+                ], 401);
+            }
+
+            $perPage = $request->input('per_page', 10);
+            $status = $request->input('status');
+            $search = $request->input('search');
+
+            // 🩺 Query appointments for the authenticated patient
+            $query = \App\Models\Appointment::with(['doctor.specialization'])
+                ->where('patient_id', $patient->id)
+                ->orderBy('created_at', 'desc');
+
+            // 🔍 Search filter
+            if (!empty($search)) {
+                $query->whereHas('doctor', function ($q) use ($search) {
+                    $q->where('doctor_name', 'like', "%{$search}%");
+                })->orWhere('appointment_no', 'like', "%{$search}%");
+            }
+
+            // ⚙️ Filter by status (optional)
+            if (!empty($status)) {
+                $query->where('status', $status);
+            }
+
+            $appointments = $query->paginate($perPage);
+
+            // 🧠 Transform response
+            $appointments->getCollection()->transform(function ($appointment) {
+                $appointment->doctor->profile_img = $appointment->doctor->profile_img
+                    ? asset($appointment->doctor->profile_img)
+                    : asset('default-profile.jpg');
+
+                return [
+                    'appointment_id' => $appointment->id,
+                    'appointment_no' => $appointment->appointment_no,
+                    'doctor_name' => $appointment->doctor->doctor_name ?? 'Unknown Doctor',
+                    'doctor_email' => $appointment->doctor->email ?? null,
+                    'specialization' => $appointment->doctor->specialization->specialization_name ?? '—',
+                    'doctor_profile_img' => $appointment->doctor->profile_img,
+                    'date' => $appointment->date,
+                    'time' => $appointment->time,
+                    'status' => $appointment->status,
+                    'remarks' => $appointment->remarks ?? '—',
+                ];
+            });
+
+            return response()->json([
+                'isSuccess' => true,
+                'message' => $appointments->isEmpty()
+                    ? 'No appointments found for your account.'
+                    : 'Appointments retrieved successfully.',
+                'data' => $appointments->items(),
+                'pagination' => [
+                    'current_page' => $appointments->currentPage(),
+                    'per_page' => $appointments->perPage(),
+                    'total' => $appointments->total(),
+                    'last_page' => $appointments->lastPage(),
+                    'has_more_pages' => $appointments->hasMorePages(),
+                ],
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Failed to retrieve your appointments.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
     // Soft delete (archive) a patient account
     public function deletePatient($id)
     {
