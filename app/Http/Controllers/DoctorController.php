@@ -156,17 +156,36 @@ class DoctorController extends Controller
     /**
      * ✅ Retrieve all active doctors (not archived)
      */
-    public function getDoctors()
+    public function getDoctors(Request $request)
     {
         try {
-            $doctors = Doctor::with(['specialization', 'availableDays'])
+            $search  = $request->input('search');
+            $perPage = $request->input('per_page', 10); // Default 10 per page
+
+            $query = Doctor::with(['specialization', 'availableDays'])
                 ->where('is_archived', 0)
-                ->orderBy('created_at', 'desc')
-                ->get();
+                ->orderBy('created_at', 'desc');
+
+            // 🔍 Search logic
+            if (!empty($search)) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('doctor_name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('contact_number', 'like', "%{$search}%")
+                        ->orWhereHas('specialization', function ($sub) use ($search) {
+                            $sub->where('name', 'like', "%{$search}%");
+                        });
+                });
+            }
+
+            // 📄 Pagination
+            $doctors = $query->paginate($perPage);
 
             return response()->json([
                 'isSuccess' => true,
-                'message'   => $doctors->isEmpty() ? 'No doctors found.' : 'Doctors retrieved successfully.',
+                'message'   => $doctors->isEmpty()
+                    ? 'No doctors found.'
+                    : 'Doctors retrieved successfully.',
                 'data'      => $doctors,
             ]);
         } catch (Exception $e) {
@@ -177,6 +196,7 @@ class DoctorController extends Controller
             ], 500);
         }
     }
+
 
     /**
      * ✅ Retrieve a single doctor by ID
@@ -225,10 +245,27 @@ class DoctorController extends Controller
                 ], 403);
             }
 
-            $appointments = Appointment::where('doctor_id', $doctor->id)
+            $search  = $request->input('search');
+            $perPage = $request->input('per_page', 10); // Default 10 per page
+
+            $query = Appointment::where('doctor_id', $doctor->id)
+                ->where('is_archived', 0)
                 ->with(['patient'])
-                ->orderBy('appointment_date', 'desc')
-                ->get();
+                ->orderBy('appointment_date', 'desc');
+
+            // 🔍 Search by patient name, appointment date, or status
+            if (!empty($search)) {
+                $query->where(function ($q) use ($search) {
+                    $q->whereHas('patient', function ($sub) use ($search) {
+                        $sub->where('patient_name', 'like', "%{$search}%");
+                    })
+                        ->orWhere('appointment_date', 'like', "%{$search}%")
+                        ->orWhere('status', 'like', "%{$search}%");
+                });
+            }
+
+            // 📄 Apply pagination
+            $appointments = $query->paginate($perPage);
 
             return response()->json([
                 'isSuccess' => true,
@@ -245,6 +282,7 @@ class DoctorController extends Controller
             ], 500);
         }
     }
+
 
     public function approveAppointment($id)
     {
