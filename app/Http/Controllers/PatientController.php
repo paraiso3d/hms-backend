@@ -53,12 +53,11 @@ class PatientController extends Controller
     {
         try {
             $search  = $request->input('search');
-            $perPage = $request->input('per_page', 10); // Default 10 per page
+            $perPage = $request->input('per_page', 10);
 
             $query = Patient::where('is_archived', 0)
                 ->orderBy('created_at', 'desc');
 
-            // 🔍 Search by patient name, email, contact number, or address
             if (!empty($search)) {
                 $query->where(function ($q) use ($search) {
                     $q->where('patient_name', 'like', "%{$search}%")
@@ -68,24 +67,31 @@ class PatientController extends Controller
                 });
             }
 
-            // 📄 Apply pagination
             $patients = $query->paginate($perPage);
 
             return response()->json([
                 'isSuccess' => true,
-                'message'   => $patients->isEmpty()
+                'message' => $patients->isEmpty()
                     ? 'No patients found.'
                     : 'Patients retrieved successfully.',
-                'data'      => $patients,
+                'data' => $patients->items(),
+                'pagination' => [
+                    'current_page' => $patients->currentPage(),
+                    'per_page' => $patients->perPage(),
+                    'total' => $patients->total(),
+                    'last_page' => $patients->lastPage(),
+                    'has_more_pages' => $patients->hasMorePages(),
+                ],
             ]);
         } catch (Exception $e) {
             return response()->json([
                 'isSuccess' => false,
-                'message'   => 'Failed to retrieve patients.',
-                'error'     => $e->getMessage(),
+                'message' => 'Failed to retrieve patients.',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
+
 
 
     // Retrieve a single patient by ID

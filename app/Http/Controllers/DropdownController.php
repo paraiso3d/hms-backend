@@ -7,6 +7,7 @@ use App\Models\Patient;
 use App\Models\Doctor;
 use App\Models\Specialization;
 use App\Models\Appointment;
+use Exception;
 
 class DropdownController extends Controller
 {
@@ -58,11 +59,48 @@ class DropdownController extends Controller
     /**
      *  Specializations dropdown
      */
-    public function getSpecializations()
+    public function getSpecializations(Request $request)
     {
-        $specializations = Specialization::select('id', 'specialization_name')->get();
-        return response()->json(['isSuccess' => true, 'specializations' => $specializations]);
+        try {
+            $search  = $request->input('search');
+            $perPage = $request->input('per_page', 10); // Default items per page
+
+            $query = Specialization::select('id', 'specialization_name')
+                ->where('is_archived', 0)
+                ->orderBy('specialization_name', 'asc');
+
+            // 🔍 Optional search filter
+            if (!empty($search)) {
+                $query->where('specialization_name', 'like', "%{$search}%");
+            }
+
+            // ⚡ Cursor pagination for smooth dropdowns
+            $specializations = $query->cursorPaginate($perPage);
+
+            return response()->json([
+                'isSuccess' => true,
+                'message' => $specializations->isEmpty()
+                    ? 'No specializations found.'
+                    : 'Specializations retrieved successfully.',
+                'specializations' => $specializations->items(), // Actual data only
+
+                // 📄 Minimal pagination data (no URLs)
+                'pagination' => [
+                    'per_page'       => $specializations->perPage(),
+                    'next_cursor'    => optional($specializations->nextCursor())->encode(),
+                    'prev_cursor'    => optional($specializations->previousCursor())->encode(),
+                    'has_more_pages' => $specializations->hasMorePages(),
+                ],
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message'   => 'Failed to retrieve specializations.',
+                'error'     => $e->getMessage(),
+            ], 500);
+        }
     }
+
 
     /**
      *  Appointments dropdown

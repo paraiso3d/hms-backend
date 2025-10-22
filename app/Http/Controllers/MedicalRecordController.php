@@ -15,13 +15,12 @@ class MedicalRecordController extends Controller
     {
         try {
             $search  = $request->input('search');
-            $perPage = $request->input('per_page', 10); // Default 10 per page
+            $perPage = $request->input('per_page', 10);
 
             $query = MedicalRecord::with(['patient', 'doctor'])
                 ->where('is_archived', 0)
                 ->orderBy('created_at', 'desc');
 
-            // 🔍 Search across patient name, doctor name, diagnosis, treatment, and record date
             if (!empty($search)) {
                 $query->where(function ($q) use ($search) {
                     $q->whereHas('patient', function ($sub) use ($search) {
@@ -36,24 +35,31 @@ class MedicalRecordController extends Controller
                 });
             }
 
-            // 📄 Apply pagination
             $records = $query->paginate($perPage);
 
             return response()->json([
                 'isSuccess' => true,
-                'message'   => $records->isEmpty()
+                'message' => $records->isEmpty()
                     ? 'No medical records found.'
                     : 'Medical records retrieved successfully.',
-                'data'      => $records,
+                'data' => $records->items(),
+                'pagination' => [
+                    'current_page' => $records->currentPage(),
+                    'per_page' => $records->perPage(),
+                    'total' => $records->total(),
+                    'last_page' => $records->lastPage(),
+                    'has_more_pages' => $records->hasMorePages(),
+                ],
             ]);
         } catch (Exception $e) {
             return response()->json([
                 'isSuccess' => false,
-                'message'   => 'Failed to retrieve medical records.',
-                'error'     => $e->getMessage(),
+                'message' => 'Failed to retrieve medical records.',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
+
 
 
     /**

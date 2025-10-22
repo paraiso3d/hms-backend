@@ -48,12 +48,11 @@ class SpecializationController extends Controller
     {
         try {
             $search  = $request->input('search');
-            $perPage = $request->input('per_page', 10); // Default 10 per page
+            $perPage = $request->input('per_page', 10);
 
             $query = Specialization::where('is_archived', 0)
                 ->orderBy('created_at', 'desc');
 
-            // 🔍 Search by specialization name or common conditions
             if (!empty($search)) {
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
@@ -62,10 +61,8 @@ class SpecializationController extends Controller
                 });
             }
 
-            // 📄 Apply pagination
             $specializations = $query->paginate($perPage);
 
-            // 🧩 Convert comma-separated string to array for each specialization
             $specializations->getCollection()->transform(function ($item) {
                 $item->common_conditions = array_map('trim', explode(',', $item->common_conditions));
                 return $item;
@@ -73,19 +70,27 @@ class SpecializationController extends Controller
 
             return response()->json([
                 'isSuccess' => true,
-                'message'   => $specializations->isEmpty()
+                'message' => $specializations->isEmpty()
                     ? 'No specializations found.'
                     : 'Specializations retrieved successfully.',
-                'data'      => $specializations,
+                'data' => $specializations->items(),
+                'pagination' => [
+                    'current_page' => $specializations->currentPage(),
+                    'per_page' => $specializations->perPage(),
+                    'total' => $specializations->total(),
+                    'last_page' => $specializations->lastPage(),
+                    'has_more_pages' => $specializations->hasMorePages(),
+                ],
             ]);
         } catch (Exception $e) {
             return response()->json([
                 'isSuccess' => false,
-                'message'   => 'Failed to retrieve specializations.',
-                'error'     => $e->getMessage(),
+                'message' => 'Failed to retrieve specializations.',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
+
 
 
     /**

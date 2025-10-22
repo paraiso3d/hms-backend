@@ -183,19 +183,27 @@ class DoctorController extends Controller
 
             return response()->json([
                 'isSuccess' => true,
-                'message'   => $doctors->isEmpty()
+                'message' => $doctors->isEmpty()
                     ? 'No doctors found.'
                     : 'Doctors retrieved successfully.',
-                'data'      => $doctors,
+                'data' => $doctors->items(), // Actual data only
+                'pagination' => [
+                    'current_page' => $doctors->currentPage(),
+                    'per_page' => $doctors->perPage(),
+                    'total' => $doctors->total(),
+                    'last_page' => $doctors->lastPage(),
+                    'has_more_pages' => $doctors->hasMorePages(),
+                ],
             ]);
         } catch (Exception $e) {
             return response()->json([
                 'isSuccess' => false,
-                'message'   => 'Failed to retrieve doctors.',
-                'error'     => $e->getMessage(),
+                'message' => 'Failed to retrieve doctors.',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
+
 
 
     /**
@@ -241,19 +249,18 @@ class DoctorController extends Controller
             if (!$doctor || $doctor->role !== 'Doctor') {
                 return response()->json([
                     'isSuccess' => false,
-                    'message'   => 'Unauthorized access.',
+                    'message' => 'Unauthorized access.',
                 ], 403);
             }
 
             $search  = $request->input('search');
-            $perPage = $request->input('per_page', 10); // Default 10 per page
+            $perPage = $request->input('per_page', 10);
 
             $query = Appointment::where('doctor_id', $doctor->id)
                 ->where('is_archived', 0)
                 ->with(['patient'])
                 ->orderBy('appointment_date', 'desc');
 
-            // 🔍 Search by patient name, appointment date, or status
             if (!empty($search)) {
                 $query->where(function ($q) use ($search) {
                     $q->whereHas('patient', function ($sub) use ($search) {
@@ -264,21 +271,27 @@ class DoctorController extends Controller
                 });
             }
 
-            // 📄 Apply pagination
             $appointments = $query->paginate($perPage);
 
             return response()->json([
                 'isSuccess' => true,
-                'message'   => $appointments->isEmpty()
+                'message' => $appointments->isEmpty()
                     ? 'No appointments found for this doctor.'
                     : 'Appointments retrieved successfully.',
-                'data'      => $appointments,
+                'data' => $appointments->items(),
+                'pagination' => [
+                    'current_page' => $appointments->currentPage(),
+                    'per_page' => $appointments->perPage(),
+                    'total' => $appointments->total(),
+                    'last_page' => $appointments->lastPage(),
+                    'has_more_pages' => $appointments->hasMorePages(),
+                ],
             ]);
         } catch (Exception $e) {
             return response()->json([
                 'isSuccess' => false,
-                'message'   => 'Failed to fetch appointments.',
-                'error'     => $e->getMessage(),
+                'message' => 'Failed to fetch appointments.',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

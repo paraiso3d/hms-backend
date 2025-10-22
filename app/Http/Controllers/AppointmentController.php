@@ -56,13 +56,13 @@ class AppointmentController extends Controller
     public function getAppointments(Request $request)
     {
         try {
-            $search = $request->input('search');
-            $perPage = $request->input('per_page', 10); // Default to 10 per page
+            $search  = $request->input('search');
+            $perPage = $request->input('per_page', 10);
 
             $query = Appointment::with(['patient', 'doctor'])
-                ->where('is_archived', 0);
+                ->where('is_archived', 0)
+                ->orderBy('appointment_date', 'desc');
 
-            // Search logic — matches patient name, doctor name, or appointment date
             if (!empty($search)) {
                 $query->where(function ($q) use ($search) {
                     $q->whereHas('patient', function ($sub) use ($search) {
@@ -76,22 +76,31 @@ class AppointmentController extends Controller
                 });
             }
 
-            // Paginate and order results
-            $appointments = $query
-                ->orderBy('appointment_date', 'desc')
-                ->paginate($perPage);
+            $appointments = $query->paginate($perPage);
 
             return response()->json([
                 'isSuccess' => true,
-                'data' => $appointments,
+                'message' => $appointments->isEmpty()
+                    ? 'No appointments found.'
+                    : 'Appointments retrieved successfully.',
+                'data' => $appointments->items(),
+                'pagination' => [
+                    'current_page' => $appointments->currentPage(),
+                    'per_page' => $appointments->perPage(),
+                    'total' => $appointments->total(),
+                    'last_page' => $appointments->lastPage(),
+                    'has_more_pages' => $appointments->hasMorePages(),
+                ],
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'isSuccess' => false,
-                'message' => 'Error retrieving appointments: ' . $e->getMessage(),
+                'message' => 'Error retrieving appointments.',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
+
 
 
     /**
