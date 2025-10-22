@@ -232,6 +232,11 @@ class DoctorController extends Controller
                 ], 404);
             }
 
+            // 🖼️ Add full asset URL for profile_img
+            $doctor->profile_img = $doctor->profile_img
+                ? asset($doctor->profile_img)
+                : asset('default-profile.png'); // optional fallback
+
             return response()->json([
                 'isSuccess' => true,
                 'message'   => 'Doctor retrieved successfully.',
@@ -245,6 +250,7 @@ class DoctorController extends Controller
             ], 500);
         }
     }
+
 
 
     /**
