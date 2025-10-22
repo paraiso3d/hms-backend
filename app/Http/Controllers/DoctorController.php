@@ -181,12 +181,20 @@ class DoctorController extends Controller
             // 📄 Pagination
             $doctors = $query->paginate($perPage);
 
+            // 🖼️ Add full asset URL for profile_img
+            $doctors->getCollection()->transform(function ($doctor) {
+                $doctor->profile_img = $doctor->profile_img
+                    ? asset($doctor->profile_img)
+                    : asset('default-profile.png'); // Optional fallback
+                return $doctor;
+            });
+
             return response()->json([
                 'isSuccess' => true,
                 'message' => $doctors->isEmpty()
                     ? 'No doctors found.'
                     : 'Doctors retrieved successfully.',
-                'data' => $doctors->items(), // Actual data only
+                'data' => $doctors->items(),
                 'pagination' => [
                     'current_page' => $doctors->currentPage(),
                     'per_page' => $doctors->perPage(),
@@ -203,6 +211,7 @@ class DoctorController extends Controller
             ], 500);
         }
     }
+
 
 
 

@@ -65,8 +65,6 @@ class PaymentController extends Controller
                         ->orWhereHas('appointment', function ($sub) use ($search) {
                             $sub->where('appointment_date', 'like', "%{$search}%");
                         })
-                        ->orWhere('payment_method', 'like', "%{$search}%")
-                        ->orWhere('reference_no', 'like', "%{$search}%")
                         ->orWhere('amount', 'like', "%{$search}%")
                         ->orWhere('status', 'like', "%{$search}%");
                 });
