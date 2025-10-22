@@ -51,6 +51,7 @@ Route::get('/getpatients/{id}', [PatientController::class, 'getPatientById']);
 Route::post('/createpatient', [PatientController::class, 'createPatient']);
 Route::post('/updatepatient/{id}', [PatientController::class, 'updatePatient']);
 Route::post('/deletepatient/{id}', [PatientController::class, 'deletePatient']);
+Route::post('getmyappointments', [PatientController::class, 'getMyAppointments'])->middleware('auth:sanctum');
 
 
 // ---------------------
