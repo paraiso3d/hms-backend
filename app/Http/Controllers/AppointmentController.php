@@ -63,6 +63,7 @@ class AppointmentController extends Controller
                 ->where('is_archived', 0)
                 ->orderBy('appointment_date', 'desc');
 
+            // 🔍 Search logic
             if (!empty($search)) {
                 $query->where(function ($q) use ($search) {
                     $q->whereHas('patient', function ($sub) use ($search) {
@@ -77,6 +78,25 @@ class AppointmentController extends Controller
             }
 
             $appointments = $query->paginate($perPage);
+
+            // 🖼️ Transform data to include asset URLs
+            $appointments->getCollection()->transform(function ($appointment) {
+                // Add full URL for patient profile image
+                if ($appointment->patient) {
+                    $appointment->patient->profile_img = $appointment->patient->profile_img
+                        ? asset($appointment->patient->profile_img)
+                        : asset('default-profile.png');
+                }
+
+                // (Optional) Add doctor profile_img if you want it too
+                if ($appointment->doctor) {
+                    $appointment->doctor->profile_img = $appointment->doctor->profile_img
+                        ? asset($appointment->doctor->profile_img)
+                        : asset('default-profile.png');
+                }
+
+                return $appointment;
+            });
 
             return response()->json([
                 'isSuccess' => true,
@@ -100,6 +120,7 @@ class AppointmentController extends Controller
             ], 500);
         }
     }
+
 
 
 
