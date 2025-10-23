@@ -415,7 +415,7 @@ class DoctorController extends Controller
             if (!empty($search)) {
                 $query->where(function ($q) use ($search) {
                     $q->whereHas('patient', function ($sub) use ($search) {
-                        $sub->where('patient_name', 'like', "%{$search}%");
+                        $sub->where('full_name', 'like', "%{$search}%");
                     })
                         ->orWhere('appointment_date', 'like', "%{$search}%")
                         ->orWhere('status', 'like', "%{$search}%");
