@@ -38,7 +38,7 @@ Route::get('/getdoctors', [DoctorController::class, 'getDoctors']);
 Route::get('/getdoctors/{id}', [DoctorController::class, 'getDoctorById']);
 Route::get('getmydoctorprofile', [DoctorController::class, 'getMyDoctorProfile'])->middleware('auth:sanctum');
 Route::post('updatedoctorprofile', [DoctorController::class, 'updateMyDoctorProfile'])->middleware('auth:sanctum');
-Route::get('getmyappointments', [DoctorController::class, 'getMyAppointments'])->middleware('auth:sanctum');
+Route::get('getmydoctorappointments', [DoctorController::class, 'getMyAppointments'])->middleware('auth:sanctum');
 Route::post('/createdoctor', [DoctorController::class, 'createDoctor']);
 Route::post('/updatedoctor/{id}', [DoctorController::class, 'updateDoctor']);
 Route::post('/deletedoctor/{id}', [DoctorController::class, 'deleteDoctor']);
