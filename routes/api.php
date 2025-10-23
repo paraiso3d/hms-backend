@@ -36,11 +36,13 @@ Route::post('/deletespecialization/{id}', [SpecializationController::class, 'del
 // ---------------------
 Route::get('/getdoctors', [DoctorController::class, 'getDoctors']);
 Route::get('/getdoctors/{id}', [DoctorController::class, 'getDoctorById']);
+Route::get('getmydoctorprofile', [DoctorController::class, 'getMyDoctorProfile'])->middleware('auth:sanctum');
 Route::post('/createdoctor', [DoctorController::class, 'createDoctor']);
 Route::post('/updatedoctor/{id}', [DoctorController::class, 'updateDoctor']);
 Route::post('/deletedoctor/{id}', [DoctorController::class, 'deleteDoctor']);
 Route::post('approveappointment/{id}', [DoctorController::class, 'approveAppointment']);
 Route::post('rejectappointment/{id}', [DoctorController::class, 'rejectAppointment']);
+
 
 
 // ---------------------

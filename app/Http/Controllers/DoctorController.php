@@ -252,6 +252,52 @@ class DoctorController extends Controller
     }
 
 
+    public function getMyDoctorProfile()
+    {
+        try {
+            $doctor = auth()->user();
+
+            // 🧠 Check if the logged-in user is actually a doctor
+            if (!$doctor || $doctor->role !== 'Doctor') {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message'   => 'Unauthorized access.',
+                ], 401);
+            }
+
+            // 🔍 Fetch the full doctor record with relationships
+            $doctorData = Doctor::with(['specialization', 'availableDays'])
+                ->where('id', $doctor->id)
+                ->where('is_archived', 0)
+                ->first();
+
+            if (!$doctorData) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message'   => 'Doctor profile not found.',
+                ], 404);
+            }
+
+            // 🖼️ Add full URL for profile image (with fallback)
+            $doctorData->profile_img = $doctorData->profile_img
+                ? asset($doctorData->profile_img)
+                : asset('default-profile.png');
+
+            return response()->json([
+                'isSuccess' => true,
+                'message'   => 'Doctor profile retrieved successfully.',
+                'data'      => $doctorData,
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message'   => 'Failed to retrieve doctor profile.',
+                'error'     => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
 
     /**
      * Get appointments for the logged-in doctor
