@@ -312,18 +312,18 @@ class DoctorController extends Controller
             }
 
             $validated = $request->validate([
-                'doctor_name'         => 'required|string|max:255',
-                'email'               => 'required|email|unique:doctors,email,' . $doctor->id,
-                'password'            => 'nullable|string|min:6|confirmed',
-                'specialization_id'   => 'required|integer|exists:specializations,id',
-                'years_of_experience' => 'required|integer|min:0',
-                'consultation_fee'    => 'required|numeric|min:0',
-                'qualifications'      => 'required|string|max:255',
-                'about'               => 'nullable|string',
-                'university_graduated' => 'nullable|string|max:255',
-                'available_days'      => 'required|array|min:1',
+                'doctor_name'         => 'sometimes|string|max:255',
+                'email'               => 'sometimes|email|unique:doctors,email,' . $doctor->id,
+                'password'            => 'sometimes|string|min:6|confirmed',
+                'specialization_id'   => 'sometimes|integer|exists:specializations,id',
+                'years_of_experience' => 'sometimes|integer|min:0',
+                'consultation_fee'    => 'sometimes|numeric|min:0',
+                'qualifications'      => 'sometimes|string|max:255',
+                'about'               => 'sometimes|string',
+                'university_graduated' => 'sometimes|string|max:255',
+                'available_days'      => 'sometimes|array|min:1',
                 'available_days.*'    => 'string|max:50',
-                'profile_img'         => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+                'profile_img'         => 'sometimes|image|mimes:jpeg,png,jpg|max:2048',
             ]);
 
             $updateData = [
