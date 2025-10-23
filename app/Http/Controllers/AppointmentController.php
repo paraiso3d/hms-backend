@@ -6,6 +6,7 @@ use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\Patient;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Exception;
 
 class AppointmentController extends Controller
@@ -71,6 +72,12 @@ class AppointmentController extends Controller
                 'message'   => 'Appointment request submitted successfully. Awaiting doctor approval.',
                 'data'      => $appointment,
             ], 201);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message'   => 'Validation failed.',
+                'errors'    => $e->errors(),
+            ], 422);
         } catch (Exception $e) {
             return response()->json([
                 'isSuccess' => false,
