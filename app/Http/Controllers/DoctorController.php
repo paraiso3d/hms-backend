@@ -299,6 +299,92 @@ class DoctorController extends Controller
 
 
 
+    public function updateMyDoctorProfile(Request $request)
+    {
+        try {
+            $doctor = auth()->user();
+
+            if (!$doctor || $doctor->role !== 'Doctor') {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message'   => 'Unauthorized access.',
+                ], 401);
+            }
+
+            $validated = $request->validate([
+                'doctor_name'         => 'required|string|max:255',
+                'email'               => 'required|email|unique:doctors,email,' . $doctor->id,
+                'password'            => 'nullable|string|min:6|confirmed',
+                'specialization_id'   => 'required|integer|exists:specializations,id',
+                'years_of_experience' => 'required|integer|min:0',
+                'consultation_fee'    => 'required|numeric|min:0',
+                'qualifications'      => 'required|string|max:255',
+                'about'               => 'nullable|string',
+                'university_graduated' => 'nullable|string|max:255',
+                'available_days'      => 'required|array|min:1',
+                'available_days.*'    => 'string|max:50',
+                'profile_img'         => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            ]);
+
+            $updateData = [
+                'doctor_name'         => $validated['doctor_name'],
+                'email'               => $validated['email'],
+                'specialization_id'   => $validated['specialization_id'],
+                'years_of_experience' => $validated['years_of_experience'],
+                'consultation_fee'    => $validated['consultation_fee'],
+                'qualifications'      => $validated['qualifications'],
+                'about'               => $validated['about'] ?? $doctor->about,
+                'university_graduated' => $validated['university_graduated'] ?? $doctor->university_graduated,
+            ];
+
+            // 🔐 Update password if provided
+            if (!empty($validated['password'])) {
+                $updateData['password'] = Hash::make($validated['password']);
+            }
+
+            // 🖼️ Handle new profile image
+            if ($request->hasFile('profile_img')) {
+                if ($doctor->profile_img && file_exists(public_path($doctor->profile_img))) {
+                    unlink(public_path($doctor->profile_img));
+                }
+
+                $file = $request->file('profile_img');
+                $filename = 'doctor_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                $file->move(public_path('hms_files/doctor'), $filename);
+                $updateData['profile_img'] = 'hms_files/doctor/' . $filename;
+            }
+
+            // ✅ Update doctor
+            Doctor::where('id', $doctor->id)->update($updateData);
+
+            // 🔁 Update available days
+            $doctor->availableDays()->delete();
+            foreach ($validated['available_days'] as $day) {
+                $doctor->availableDays()->create(['day_of_week' => $day]);
+            }
+
+            $updatedDoctor = Doctor::with(['specialization', 'availableDays'])->find($doctor->id);
+            $updatedDoctor->profile_img = $updatedDoctor->profile_img
+                ? asset($updatedDoctor->profile_img)
+                : asset('default-profile.png');
+
+            return response()->json([
+                'isSuccess' => true,
+                'message'   => 'Doctor profile updated successfully!',
+                'data'      => $updatedDoctor,
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message'   => 'Failed to update doctor profile.',
+                'error'     => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+
+
     /**
      * Get appointments for the logged-in doctor
      */
