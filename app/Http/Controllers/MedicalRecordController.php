@@ -14,23 +14,17 @@ class MedicalRecordController extends Controller
     public function getMedicalRecords(Request $request)
     {
         try {
-            $search  = $request->input('search', '');
-            $page    = $request->input('page', 1);
+            $search  = $request->input('search');
             $perPage = $request->input('per_page', 10);
 
-            $query = MedicalRecord::with([
-                'patient:id,full_name,email,phone_number,gender,age,profile_img',
-                'doctor:id,doctor_name,qualifications,profile_img'
-            ])
+            $query = MedicalRecord::with(['patient', 'doctor'])
                 ->where('is_archived', 0)
                 ->orderBy('created_at', 'desc');
 
-            // 🔍 Apply search filters
             if (!empty($search)) {
                 $query->where(function ($q) use ($search) {
                     $q->whereHas('patient', function ($sub) use ($search) {
-                        $sub->where('full_name', 'like', "%{$search}%")
-                            ->orWhere('email', 'like', "%{$search}%");
+                        $sub->where('full_name', 'like', "%{$search}%");
                     })
                         ->orWhereHas('doctor', function ($sub) use ($search) {
                             $sub->where('doctor_name', 'like', "%{$search}%");
@@ -41,10 +35,8 @@ class MedicalRecordController extends Controller
                 });
             }
 
-            // 📄 Paginate results
-            $records = $query->paginate($perPage, ['*'], 'page', $page);
+            $records = $query->paginate($perPage);
 
-            // ✅ Standardized response
             return response()->json([
                 'isSuccess' => true,
                 'message' => $records->isEmpty()
@@ -52,10 +44,10 @@ class MedicalRecordController extends Controller
                     : 'Medical records retrieved successfully.',
                 'data' => $records->items(),
                 'pagination' => [
-                    'current_page'   => $records->currentPage(),
-                    'per_page'       => (string) $records->perPage(),
-                    'total'          => $records->total(),
-                    'last_page'      => $records->lastPage(),
+                    'current_page' => $records->currentPage(),
+                    'per_page' => $records->perPage(),
+                    'total' => $records->total(),
+                    'last_page' => $records->lastPage(),
                     'has_more_pages' => $records->hasMorePages(),
                 ],
             ]);
