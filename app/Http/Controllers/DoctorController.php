@@ -493,7 +493,6 @@ class DoctorController extends Controller
                     'amount'          => $doctor->consultation_fee, // 💵 doctor’s fee here
                     'payment_method'  => 'Cash',
                     'payment_status'  => 'Pending', // or 'Paid' if you prefer
-                    'payment_date'    => now(),
                     'is_archived'     => 0,
                 ]);
             }
