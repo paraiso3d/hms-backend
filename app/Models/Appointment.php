@@ -20,6 +20,7 @@ class Appointment extends Model
         'reason_for_visit',
         'is_archived',
         'notes',
+        'is_paid',
     ];
 
     // 🧠 Relationships

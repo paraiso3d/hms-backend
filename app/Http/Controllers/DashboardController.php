@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Doctor;
 use App\Models\Patient;
 use App\Models\Appointment;
+use App\Models\Payment;
 use Illuminate\Support\Facades\DB;
 use Exception;
 
@@ -18,7 +19,11 @@ class DashboardController extends Controller
             $totalDoctors = Doctor::where('is_archived', 0)->count();
             $totalPatients = Patient::where('is_archived', 0)->count();
             $totalAppointments = Appointment::where('is_archived', 0)->count();
-            $totalEarnings = Doctor::sum('consultation_fee');
+
+            // 💰 Get total earnings from payments table (Paid only)
+            $totalEarnings = Payment::where('is_archived', 0)
+                ->where('payment_status', 'Paid')
+                ->sum('amount');
 
             $latestAppointments = Appointment::with(['doctor', 'patient'])
                 ->orderBy('appointment_date', 'desc')
@@ -34,7 +39,7 @@ class DashboardController extends Controller
                     ];
                 });
 
-            // Top doctors by appointment count
+            // Top doctors by completed appointment count
             $topDoctors = Doctor::select('id', 'doctor_name', 'specialization_id')
                 ->withCount(['appointments' => function ($q) {
                     $q->where('status', 'Completed');
@@ -95,9 +100,12 @@ class DashboardController extends Controller
                 ->distinct('patient_id')
                 ->count('patient_id');
 
-            $earnings = Appointment::where('doctor_id', $doctor->id)
-                ->where('status', 'Completed')
-                ->sum(DB::raw('(SELECT consultation_fee FROM doctors WHERE doctors.id = appointments.doctor_id)'));
+            // 💰 Calculate total earnings for this doctor
+            $earnings = Payment::join('appointments', 'payments.appointment_id', '=', 'appointments.id')
+                ->where('appointments.doctor_id', $doctor->id)
+                ->where('payments.payment_status', 'Paid')
+                ->where('payments.is_archived', 0)
+                ->sum('payments.amount');
 
             $latestBookings = Appointment::with('patient')
                 ->where('doctor_id', $doctor->id)
