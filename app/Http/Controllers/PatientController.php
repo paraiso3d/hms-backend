@@ -259,6 +259,44 @@ class PatientController extends Controller
         }
     }
 
+    public function cancelAppointment($id)
+    {
+        $patient = auth()->user();
+
+        if (!$patient) {
+            return response()->json([
+                'isSuccess' => false,
+                'message'   => 'Unauthorized access.'
+            ], 401);
+        }
+
+        $appointment = Appointment::where('id', $id)
+            ->where('patient_id', $patient->id)
+            ->where('is_archived', 0)
+            ->first();
+
+        if (!$appointment) {
+            return response()->json([
+                'isSuccess' => false,
+                'message'   => 'Appointment not found.'
+            ], 404);
+        }
+
+        if ($appointment->status === 'Cancelled') {
+            return response()->json([
+                'isSuccess' => false,
+                'message'   => 'Appointment is already cancelled.'
+            ], 400);
+        }
+
+        $appointment->update(['status' => 'Cancelled']);
+
+        return response()->json([
+            'isSuccess' => true,
+            'message'   => 'Appointment cancelled successfully.'
+        ]);
+    }
+
 
     // Soft delete (archive) a patient account
     public function deletePatient($id)
