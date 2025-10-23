@@ -31,8 +31,16 @@ class AppointmentController extends Controller
             $duplicate = Appointment::where('doctor_id', $validated['doctor_id'])
                 ->where('appointment_date', $validated['appointment_date'])
                 ->where('appointment_time', $validated['appointment_time'])
+                ->whereIn('status', ['Pending', 'Approved'])
                 ->where('is_archived', 0)
                 ->first();
+
+            if ($duplicate) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message'   => 'This time slot is already booked. Please choose a different schedule.',
+                ], 409);
+            }
 
             if ($duplicate) {
                 return response()->json([
