@@ -404,7 +404,7 @@ class DoctorController extends Controller
             }
 
             $search  = $request->input('search');
-            $perPage = $request->input('per_page', 10);
+            $perPage = $request->input('per_page', 5);
 
             // 🔍 Query appointments for this doctor
             $query = Appointment::where('doctor_id', $doctor->id)
