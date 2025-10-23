@@ -103,11 +103,16 @@ class AppointmentController extends Controller
     {
         try {
             $search  = $request->input('search');
+            $status  = $request->input('status'); // ✅ new status filter
             $perPage = $request->input('per_page', 10);
 
             $query = Appointment::with(['patient', 'doctor'])
-                ->where('is_archived', 0)
-                ->orderBy('appointment_date', 'desc');
+                ->where('is_archived', 0);
+
+            // ✅ Optional: Filter by status
+            if (!empty($status)) {
+                $query->where('status', $status);
+            }
 
             // 🔍 Search logic
             if (!empty($search)) {
@@ -123,18 +128,23 @@ class AppointmentController extends Controller
                 });
             }
 
+            // 🧠 Order: Pending first, then by date descending
+            $query->orderByRaw("CASE 
+            WHEN status = 'Pending' THEN 1 
+            ELSE 2 
+        END")
+                ->orderBy('appointment_date', 'desc');
+
             $appointments = $query->paginate($perPage);
 
-            // 🖼️ Transform data to include asset URLs
+            // 🖼️ Transform data to include profile image URLs
             $appointments->getCollection()->transform(function ($appointment) {
-                // Add full URL for patient profile image
                 if ($appointment->patient) {
                     $appointment->patient->profile_img = $appointment->patient->profile_img
                         ? asset($appointment->patient->profile_img)
                         : asset('default-profile.png');
                 }
 
-                // (Optional) Add doctor profile_img if you want it too
                 if ($appointment->doctor) {
                     $appointment->doctor->profile_img = $appointment->doctor->profile_img
                         ? asset($appointment->doctor->profile_img)
