@@ -246,8 +246,7 @@ class PatientController extends Controller
             // 🩺 Query appointments for the authenticated patient
             $query = Appointment::with(['doctor.specialization'])
                 ->where('patient_id', $patient->id)
-                ->where('is_archived', 0)
-                ->orderBy('created_at', 'desc');
+                ->where('is_archived', 0);
 
             // 🔍 Search filter
             if (!empty($search)) {
@@ -265,9 +264,13 @@ class PatientController extends Controller
                 $query->where('status', $status);
             }
 
+            // 🧠 Order so 'Pending' always appears first, then newest created_at
+            $query->orderByRaw("CASE WHEN status = 'Pending' THEN 0 ELSE 1 END")
+                ->orderBy('created_at', 'desc');
+
             $appointments = $query->paginate($perPage);
 
-            // 🧠 Transform response for frontend
+            // 🧩 Transform response for frontend
             $appointments->getCollection()->transform(function ($appointment) {
                 $doctor = $appointment->doctor;
                 $specialization = $doctor?->specialization?->specialization_name ?? '—';
@@ -313,6 +316,7 @@ class PatientController extends Controller
             ], 500);
         }
     }
+
 
     public function cancelAppointment($id)
     {

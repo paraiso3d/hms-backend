@@ -412,10 +412,12 @@ class DoctorController extends Controller
             $query = Appointment::where('doctor_id', $doctor->id)
                 ->where('is_archived', 0)
                 ->with(['patient'])
-                // 🧠 Order pending first, then by appointment date
+                // 🧠 Order pending first, then by created_at (newest first), then appointment_date
                 ->orderByRaw("CASE WHEN status = 'Pending' THEN 0 ELSE 1 END")
+                ->orderBy('created_at', 'desc')
                 ->orderBy('appointment_date', 'asc');
 
+            // 🔍 Search filter
             if (!empty($search)) {
                 $query->where(function ($q) use ($search) {
                     $q->whereHas('patient', function ($sub) use ($search) {
@@ -458,6 +460,7 @@ class DoctorController extends Controller
             ], 500);
         }
     }
+
 
 
     public function approveAppointment($id)
