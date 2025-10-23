@@ -8,40 +8,7 @@ use Exception;
 
 class PaymentController extends Controller
 {
-    /**
-     * 💰 Create a new payment record
-     */
-    public function createPayment(Request $request)
-    {
-        try {
-            $validated = $request->validate([
-                'patient_id'       => 'required|exists:patients,id',
-                'appointment_id'   => 'nullable|exists:appointments,id',
-                'amount'           => 'required|numeric|min:0',
-                'payment_method'   => 'required|string|in:Cash,Card,Online,Insurance',
-                'payment_status'   => 'required|string|in:Pending,Paid,Failed,Refunded',
-                'transaction_date' => 'required|date',
-                'remarks'          => 'nullable|string',
-            ]);
 
-            // Ensure is_archived defaults to 0
-            $validated['is_archived'] = 0;
-
-            $payment = Payment::create($validated);
-
-            return response()->json([
-                'isSuccess' => true,
-                'message'   => 'Payment recorded successfully!',
-                'data'      => $payment
-            ], 201);
-        } catch (Exception $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message'   => 'Failed to create payment record.',
-                'error'     => $e->getMessage()
-            ], 500);
-        }
-    }
 
     /**
      * 📋 Get all active payments (excluding archived)
@@ -89,6 +56,56 @@ class PaymentController extends Controller
         }
     }
 
+    /**
+     * 💵 Confirm a payment (mark as Paid)
+     */
+    public function confirmPayment($id)
+    {
+        try {
+            $payment = Payment::find($id);
+
+            if (!$payment) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'Payment record not found.',
+                ], 404);
+            }
+
+            if ($payment->is_archived) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'Cannot confirm an archived payment.',
+                ], 400);
+            }
+
+            // 🚫 Prevent re-confirming
+            if ($payment->payment_status === 'Paid') {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'This payment has already been confirmed as Paid.',
+                ], 400);
+            }
+
+            // ✅ Update payment status
+            $payment->payment_status = 'Paid';
+            $payment->payment_date = now();
+            $payment->save();
+
+            return response()->json([
+                'isSuccess' => true,
+                'message' => 'Payment confirmed successfully.',
+                'data' => $payment,
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Failed to confirm payment.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
 
     /**
      * 🔍 Get payment by ID (only if not archived)
@@ -113,38 +130,6 @@ class PaymentController extends Controller
         ]);
     }
 
-    /**
-     * ✏️ Update payment record (only if active)
-     */
-    public function updatePayment(Request $request, $id)
-    {
-        $payment = Payment::where('id', $id)
-            ->where('is_archived', 0)
-            ->first();
-
-        if (!$payment) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Payment record not found or archived.'
-            ], 404);
-        }
-
-        $validated = $request->validate([
-            'amount'           => 'required|numeric|min:0',
-            'payment_method'   => 'required|string|in:Cash,Card,Online,Insurance',
-            'payment_status'   => 'required|string|in:Pending,Paid,Failed,Refunded',
-            'transaction_date' => 'required|date',
-            'remarks'          => 'nullable|string',
-        ]);
-
-        $payment->update($validated);
-
-        return response()->json([
-            'isSuccess' => true,
-            'message'   => 'Payment updated successfully!',
-            'data'      => $payment
-        ]);
-    }
 
     /**
      * 🗑️ Soft delete (archive) payment record
