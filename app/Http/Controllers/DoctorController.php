@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Models\Appointment;
 use Exception;
+use App\Models\Payment;
+
 
 class DoctorController extends Controller
 {
@@ -455,28 +457,64 @@ class DoctorController extends Controller
         }
     }
 
-
-
     public function approveAppointment($id)
     {
-        $appointment = Appointment::find($id);
+        try {
+            $appointment = Appointment::with('doctor')->find($id);
 
-        if (!$appointment) {
+            if (!$appointment) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'Appointment not found.',
+                ], 404);
+            }
+
+            // 🩺 Fetch doctor and their consultation fee
+            $doctor = $appointment->doctor ?? Doctor::find($appointment->doctor_id);
+
+            if (!$doctor) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'Doctor not found for this appointment.',
+                ], 404);
+            }
+
+            // ✅ Update appointment status
+            $appointment->status = 'Approved';
+            $appointment->save();
+
+            // 💰 Auto-create payment record if not already exists
+            $existingPayment = Payment::where('appointment_id', $appointment->id)->first();
+
+            if (!$existingPayment) {
+                Payment::create([
+                    'patient_id'      => $appointment->patient_id,
+                    'appointment_id'  => $appointment->id,
+                    'amount'          => $doctor->consultation_fee, // 💵 doctor’s fee here
+                    'payment_method'  => 'Cash',
+                    'payment_status'  => 'Pending', // or 'Paid' if you prefer
+                    'payment_date'    => now(),
+                    'is_archived'     => 0,
+                ]);
+            }
+
+            return response()->json([
+                'isSuccess' => true,
+                'message' => 'Appointment approved successfully and payment record created.',
+                'data' => [
+                    'appointment' => $appointment,
+                    'payment_amount' => $doctor->consultation_fee,
+                ],
+            ]);
+        } catch (\Exception $e) {
             return response()->json([
                 'isSuccess' => false,
-                'message' => 'Appointment not found.',
-            ], 404);
+                'message' => 'Failed to approve appointment.',
+                'error' => $e->getMessage(),
+            ], 500);
         }
-
-        $appointment->status = 'Approved';
-        $appointment->save();
-
-        return response()->json([
-            'isSuccess' => true,
-            'message' => 'Appointment approved successfully.',
-            'data' => $appointment,
-        ]);
     }
+
 
     public function rejectAppointment(Request $request, $id)
     {

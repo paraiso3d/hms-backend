@@ -45,7 +45,7 @@ class DashboardController extends Controller
                 ->map(function ($doc) {
                     return [
                         'doctor_name' => $doc->doctor_name,
-                        'specialization' => $doc->specialization->name ?? 'N/A',
+                        'specialization' => $doc->specialization->specialization_name ?? 'N/A',
                         'appointments_completed' => $doc->appointments_count,
                     ];
                 });
