@@ -12,6 +12,12 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\DropdownController;
 
 
+// ---------------------
+// Dashboard Routes
+// ---------------------
+
+Route::get('/admindashboard', [App\Http\Controllers\DashboardController::class, 'getAdminDashboard'])->middleware('auth:sanctum');
+Route::get('/doctordashboard', [App\Http\Controllers\DashboardController::class, 'getDoctorDashboard'])->middleware('auth:sanctum');
 
 // ---------------------
 // Specialization Routes
