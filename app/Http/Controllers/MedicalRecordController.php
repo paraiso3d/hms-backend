@@ -132,32 +132,51 @@ class MedicalRecordController extends Controller
      */
     public function updateMedicalRecord(Request $request, $id)
     {
-        $record = MedicalRecord::where('id', $id)
-            ->where('is_archived', 0)
-            ->first();
+        try {
+            $record = MedicalRecord::where('id', $id)
+                ->where('is_archived', 0)
+                ->first();
 
-        if (!$record) {
+            if (!$record) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'Medical record not found or archived.'
+                ], 404);
+            }
+
+            // 🩺 Validate fields (optional ones can be nullable)
+            $validated = $request->validate([
+                'blood_pressure'      => 'nullable|string|max:20',
+                'temperature'         => 'nullable|string|max:10',
+                'heart_rate'          => 'nullable|string|max:10',
+                'weight'              => 'nullable|string|max:10',
+                'chief_complaint'     => 'nullable|string|max:255',
+                'diagnosis'           => 'nullable|string',
+                'treatment'           => 'nullable|string',
+                'treatment_plan'      => 'nullable|string',
+                'notes'               => 'nullable|string',
+                'follow_up_required'  => 'nullable|boolean',
+                'prescription'        => 'nullable|string',
+                'record_date'         => 'nullable|date',
+            ]);
+
+            // 🧠 Update only provided fields
+            $record->update($validated);
+
+            return response()->json([
+                'isSuccess' => true,
+                'message' => 'Medical record updated successfully.',
+                'data' => $record
+            ]);
+        } catch (Exception $e) {
             return response()->json([
                 'isSuccess' => false,
-                'message' => 'Medical record not found or archived.'
-            ], 404);
+                'message' => 'Failed to update medical record.',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $validated = $request->validate([
-            'diagnosis' => 'sometimes|required|string',
-            'treatment' => 'nullable|string',
-            'notes' => 'nullable|string',
-            'date_recorded' => 'sometimes|required|date',
-        ]);
-
-        $record->update($validated);
-
-        return response()->json([
-            'isSuccess' => true,
-            'message' => 'Medical record updated successfully.',
-            'data' => $record
-        ]);
     }
+
 
     /**
      * ✅ Archive (soft delete) a medical record
