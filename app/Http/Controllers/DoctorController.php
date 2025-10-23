@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\Appointment;
 use Exception;
 use App\Models\Payment;
+use App\Models\MedicalRecord;
 
 
 class DoctorController extends Controller
@@ -534,8 +535,8 @@ class DoctorController extends Controller
                 ], 403);
             }
 
-            // 🔍 Fetch appointment with payment relation
-            $appointment = Appointment::with('patient')->find($id);
+            // 🔍 Fetch appointment
+            $appointment = Appointment::find($id);
 
             if (!$appointment) {
                 return response()->json([
@@ -544,7 +545,7 @@ class DoctorController extends Controller
                 ], 404);
             }
 
-            // 💵 Find payment related to the appointment
+            // 💵 Find payment
             $payment = Payment::where('appointment_id', $appointment->id)->first();
 
             if (!$payment) {
@@ -554,17 +555,30 @@ class DoctorController extends Controller
                 ], 404);
             }
 
-            // ✅ Update appointment + payment status
+            // ✅ Update appointment and payment
             $appointment->status = 'Paid';
             $appointment->save();
 
             $payment->payment_status = 'Paid';
-            $payment->payment_date = now(); // ⏰ record the time of payment
+            $payment->payment_date = now();
             $payment->save();
+
+            // 🧾 Insert into medical_records only if it doesn't exist yet
+            $existingRecord = MedicalRecord::where('appointment_id', $appointment->id)->first();
+
+            if (!$existingRecord) {
+                MedicalRecord::create([
+                    'patient_id'     => $appointment->patient_id,
+                    'doctor_id'      => $appointment->doctor_id,
+                    'appointment_id' => $appointment->id,
+                    'record_date'    => now()->toDateString(), // ✅ match payment date
+                    'is_archived'    => 0,
+                ]);
+            }
 
             return response()->json([
                 'isSuccess' => true,
-                'message' => 'Appointment and payment marked as paid successfully.',
+                'message' => 'Appointment marked as paid and medical record created successfully.',
                 'data' => [
                     'appointment' => $appointment,
                     'payment' => $payment,
@@ -578,6 +592,8 @@ class DoctorController extends Controller
             ], 500);
         }
     }
+
+
 
 
 
