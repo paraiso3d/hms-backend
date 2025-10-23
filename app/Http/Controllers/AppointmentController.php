@@ -118,7 +118,7 @@ class AppointmentController extends Controller
             if (!empty($search)) {
                 $query->where(function ($q) use ($search) {
                     $q->whereHas('patient', function ($sub) use ($search) {
-                        $sub->where('patient_name', 'like', "%{$search}%");
+                        $sub->where('full_name', 'like', "%{$search}%");
                     })
                         ->orWhereHas('doctor', function ($sub) use ($search) {
                             $sub->where('doctor_name', 'like', "%{$search}%");
