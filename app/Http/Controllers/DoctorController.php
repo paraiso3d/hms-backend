@@ -312,28 +312,28 @@ class DoctorController extends Controller
             }
 
             $validated = $request->validate([
-                'doctor_name'         => 'sometimes|string|max:255',
-                'email'               => 'sometimes|email|unique:doctors,email,' . $doctor->id,
-                'password'            => 'sometimes|string|min:6|confirmed',
-                'specialization_id'   => 'sometimes|integer|exists:specializations,id',
-                'years_of_experience' => 'sometimes|integer|min:0',
-                'consultation_fee'    => 'sometimes|numeric|min:0',
-                'qualifications'      => 'sometimes|string|max:255',
-                'about'               => 'sometimes|string',
+                'doctor_name'          => 'sometimes|string|max:255',
+                'email'                => 'sometimes|email|unique:doctors,email,' . $doctor->id,
+                'password'             => 'sometimes|string|min:6|confirmed',
+                'specialization_id'    => 'sometimes|integer|exists:specializations,id',
+                'years_of_experience'  => 'sometimes|integer|min:0',
+                'consultation_fee'     => 'sometimes|numeric|min:0',
+                'qualifications'       => 'sometimes|string|max:255',
+                'about'                => 'sometimes|string',
                 'university_graduated' => 'sometimes|string|max:255',
-                'available_days'      => 'sometimes|array|min:1',
-                'available_days.*'    => 'string|max:50',
-                'profile_img'         => 'sometimes|image|mimes:jpeg,png,jpg|max:2048',
+                'available_days'       => 'sometimes|array|min:1',
+                'available_days.*'     => 'string|max:50',
+                'profile_img'          => 'sometimes|image|mimes:jpeg,png,jpg|max:2048',
             ]);
 
             $updateData = [
-                'doctor_name'         => $validated['doctor_name'],
-                'email'               => $validated['email'],
-                'specialization_id'   => $validated['specialization_id'],
-                'years_of_experience' => $validated['years_of_experience'],
-                'consultation_fee'    => $validated['consultation_fee'],
-                'qualifications'      => $validated['qualifications'],
-                'about'               => $validated['about'] ?? $doctor->about,
+                'doctor_name'          => $validated['doctor_name'] ?? $doctor->doctor_name,
+                'email'                => $validated['email'] ?? $doctor->email,
+                'specialization_id'    => $validated['specialization_id'] ?? $doctor->specialization_id,
+                'years_of_experience'  => $validated['years_of_experience'] ?? $doctor->years_of_experience,
+                'consultation_fee'     => $validated['consultation_fee'] ?? $doctor->consultation_fee,
+                'qualifications'       => $validated['qualifications'] ?? $doctor->qualifications,
+                'about'                => $validated['about'] ?? $doctor->about,
                 'university_graduated' => $validated['university_graduated'] ?? $doctor->university_graduated,
             ];
 
@@ -345,7 +345,7 @@ class DoctorController extends Controller
             // 🖼️ Handle new profile image
             if ($request->hasFile('profile_img')) {
                 if ($doctor->profile_img && file_exists(public_path($doctor->profile_img))) {
-                    unlink(public_path($doctor->profile_img));
+                    @unlink(public_path($doctor->profile_img));
                 }
 
                 $file = $request->file('profile_img');
@@ -357,10 +357,12 @@ class DoctorController extends Controller
             // ✅ Update doctor
             Doctor::where('id', $doctor->id)->update($updateData);
 
-            // 🔁 Update available days
-            $doctor->availableDays()->delete();
-            foreach ($validated['available_days'] as $day) {
-                $doctor->availableDays()->create(['day_of_week' => $day]);
+            // 🔁 Update available days if provided
+            if (isset($validated['available_days'])) {
+                $doctor->availableDays()->delete();
+                foreach ($validated['available_days'] as $day) {
+                    $doctor->availableDays()->create(['day_of_week' => $day]);
+                }
             }
 
             $updatedDoctor = Doctor::with(['specialization', 'availableDays'])->find($doctor->id);
@@ -381,6 +383,7 @@ class DoctorController extends Controller
             ], 500);
         }
     }
+
 
 
 
