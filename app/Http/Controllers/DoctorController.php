@@ -412,7 +412,9 @@ class DoctorController extends Controller
             $query = Appointment::where('doctor_id', $doctor->id)
                 ->where('is_archived', 0)
                 ->with(['patient'])
-                ->orderBy('appointment_date', 'desc');
+                // 🧠 Order pending first, then by appointment date
+                ->orderByRaw("CASE WHEN status = 'Pending' THEN 0 ELSE 1 END")
+                ->orderBy('appointment_date', 'asc');
 
             if (!empty($search)) {
                 $query->where(function ($q) use ($search) {
@@ -426,7 +428,7 @@ class DoctorController extends Controller
 
             $appointments = $query->paginate($perPage);
 
-            // 🧠 Map the data to include the full profile_img URL
+            // 🧠 Map to include full profile_img URL
             $data = $appointments->map(function ($appointment) {
                 if ($appointment->patient && $appointment->patient->profile_img) {
                     $appointment->patient->profile_img = asset($appointment->patient->profile_img);
@@ -456,6 +458,7 @@ class DoctorController extends Controller
             ], 500);
         }
     }
+
 
     public function approveAppointment($id)
     {
