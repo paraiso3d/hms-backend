@@ -518,6 +518,68 @@ class DoctorController extends Controller
     }
 
 
+
+    public function markAppointmentAsPaid($id)
+    {
+        try {
+            // 🩺 Verify doctor authentication
+            $doctor = auth()->user();
+            if (!$doctor || $doctor->role !== 'Doctor') {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'Unauthorized access.',
+                ], 403);
+            }
+
+            // 🔍 Fetch appointment with payment relation
+            $appointment = Appointment::with('patient')->find($id);
+
+            if (!$appointment) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'Appointment not found.',
+                ], 404);
+            }
+
+            // 💵 Find payment related to the appointment
+            $payment = Payment::where('appointment_id', $appointment->id)->first();
+
+            if (!$payment) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'Payment record not found for this appointment.',
+                ], 404);
+            }
+
+            // ✅ Update appointment + payment status
+            $appointment->status = 'Paid';
+            $appointment->save();
+
+            $payment->payment_status = 'Paid';
+            $payment->payment_date = now(); // ⏰ record the time of payment
+            $payment->save();
+
+            return response()->json([
+                'isSuccess' => true,
+                'message' => 'Appointment and payment marked as paid successfully.',
+                'data' => [
+                    'appointment' => $appointment,
+                    'payment' => $payment,
+                ],
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Failed to update payment status.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+
+
+
     public function rejectAppointment(Request $request, $id)
     {
         $appointment = Appointment::find($id);
