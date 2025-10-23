@@ -37,6 +37,19 @@ class MedicalRecordController extends Controller
 
             $records = $query->paginate($perPage);
 
+            // 🧠 Transform data: attach full URL for profile_img
+            $records->getCollection()->transform(function ($record) {
+                if ($record->patient && $record->patient->profile_img) {
+                    $record->patient->profile_img = asset('storage/' . $record->patient->profile_img);
+                }
+
+                if ($record->doctor && $record->doctor->profile_img) {
+                    $record->doctor->profile_img = asset('storage/' . $record->doctor->profile_img);
+                }
+
+                return $record;
+            });
+
             return response()->json([
                 'isSuccess' => true,
                 'message' => $records->isEmpty()
@@ -59,6 +72,7 @@ class MedicalRecordController extends Controller
             ], 500);
         }
     }
+
 
 
 
