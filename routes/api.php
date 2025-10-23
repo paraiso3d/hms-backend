@@ -51,7 +51,7 @@ Route::post('/updatedoctor/{id}', [DoctorController::class, 'updateDoctor']);
 Route::post('/deletedoctor/{id}', [DoctorController::class, 'deleteDoctor']);
 Route::post('approveappointment/{id}', [DoctorController::class, 'approveAppointment']);
 Route::post('rejectappointment/{id}', [DoctorController::class, 'rejectAppointment']);
-Route::post('markaspaid/{id}', [DoctorController::class, 'markAppointmentAsPaid']);
+Route::post('markaspaid/{id}', [DoctorController::class, 'markAppointmentAsPaid'])->middleware('auth:sanctum');
 
 
 
