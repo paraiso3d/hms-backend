@@ -16,23 +16,53 @@ class AppointmentController extends Controller
     public function createAppointment(Request $request)
     {
         try {
+            // ✅ Validate basic input
             $validated = $request->validate([
                 'patient_id'        => 'required|exists:patients,id',
                 'doctor_id'         => 'required|exists:doctors,id',
-                'appointment_date'  => 'required|date',
-                'appointment_time'  => 'required',
+                'appointment_date'  => 'required|date|after_or_equal:today',
+                'appointment_time'  => 'required|date_format:H:i',
                 'reason_for_visit'  => 'required|string|max:255',
-                'notes'             => 'nullable|string',
+                'notes'             => 'nullable|string|max:500',
             ]);
+
+            // 🧩 Check for duplicate appointment (same doctor, date, and time)
+            $duplicate = Appointment::where('doctor_id', $validated['doctor_id'])
+                ->where('appointment_date', $validated['appointment_date'])
+                ->where('appointment_time', $validated['appointment_time'])
+                ->where('is_archived', 0)
+                ->first();
+
+            if ($duplicate) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message'   => 'This time slot is already booked. Please choose a different schedule.',
+                ], 409);
+            }
+
+            // 🔍 Check if patient already has an active/pending appointment on that date
+            $existingPatient = Appointment::where('patient_id', $validated['patient_id'])
+                ->where('appointment_date', $validated['appointment_date'])
+                ->whereIn('status', ['Pending', 'Approved'])
+                ->where('is_archived', 0)
+                ->first();
+
+            if ($existingPatient) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message'   => 'You already have an appointment scheduled for this date.',
+                ], 409);
+            }
 
             // 🩺 Auto-generate Appointment Number
             $latestAppointment = Appointment::latest('id')->first();
             $nextNumber = $latestAppointment ? $latestAppointment->id + 1 : 1;
             $appointmentNo = 'PATIENT' . str_pad($nextNumber, 2, '0', STR_PAD_LEFT);
 
+            // 🧾 Create appointment record
             $validated['appointment_no'] = $appointmentNo;
             $validated['status'] = 'Pending';
-            $validated['is_archived'] = 0; // make sure it’s set to active
+            $validated['is_archived'] = 0;
 
             $appointment = Appointment::create($validated);
 
@@ -49,6 +79,7 @@ class AppointmentController extends Controller
             ], 500);
         }
     }
+
 
     /**
      * ✅ Get all active (non-archived) appointments
