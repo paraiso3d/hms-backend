@@ -170,6 +170,61 @@ class PatientController extends Controller
         ]);
     }
 
+    // Update the authenticated patient's profile
+    public function updateMyProfile(Request $request)
+    {
+        $user = auth()->user();
+
+        if (!$user || $user->role !== 'Patient') {
+            return response()->json([
+                'isSuccess' => false,
+                'message'   => 'Unauthorized.'
+            ], 401);
+        }
+
+        $patient = Patient::where('id', $user->id)->where('is_archived', 0)->first();
+
+        if (!$patient) {
+            return response()->json([
+                'isSuccess' => false,
+                'message'   => 'Patient not found.'
+            ], 404);
+        }
+
+        $validated = $request->validate([
+            'full_name'    => 'required|string|max:255',
+            'age'          => 'nullable|integer|min:0',
+            'gender'       => 'nullable|string|in:Male,Female,Other',
+            'email'        => 'required|email|max:255|unique:patients,email,' . $patient->id,
+            'phone_number' => 'nullable|string|max:20',
+            'address'      => 'nullable|string|max:255',
+            'password'     => 'nullable|string|min:6|confirmed',
+            'profile_img'  => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+        ]);
+
+        if (!empty($validated['password'])) {
+            $validated['password'] = Hash::make($validated['password']);
+        } else {
+            unset($validated['password']);
+        }
+
+        if ($request->hasFile('profile_img')) {
+            if (!empty($patient->profile_img) && file_exists(public_path($patient->profile_img))) {
+                unlink(public_path($patient->profile_img));
+            }
+            $validated['profile_img'] = $this->saveFileToPublic($request, 'profile_img', 'patient');
+        }
+
+        $patient->update($validated);
+
+        return response()->json([
+            'isSuccess' => true,
+            'message'   => 'Profile updated successfully!',
+            'data'      => $patient
+        ]);
+    }
+
+
 
 
     public function getMyAppointments(Request $request)

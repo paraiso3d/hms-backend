@@ -53,6 +53,7 @@ Route::post('/updatepatient/{id}', [PatientController::class, 'updatePatient']);
 Route::post('/deletepatient/{id}', [PatientController::class, 'deletePatient']);
 Route::get('getmyappointments', [PatientController::class, 'getMyAppointments'])->middleware('auth:sanctum');
 Route::post('cancelappointment/{id}', [PatientController::class, 'cancelAppointment'])->middleware('auth:sanctum');
+Route::post('updateprofile/{id}', [PatientController::class, 'updateMyProfile'])->middleware('auth:sanctum');
 
 
 // ---------------------
