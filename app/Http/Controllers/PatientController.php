@@ -6,6 +6,7 @@ use App\Models\Patient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Exception;
+use App\Models\Appointment;
 
 class PatientController extends Controller
 {
@@ -174,7 +175,7 @@ class PatientController extends Controller
     public function getMyAppointments(Request $request)
     {
         try {
-            $patient = auth()->user(); // Get logged-in patient
+            $patient = auth()->user();
 
             if (!$patient) {
                 return response()->json([
@@ -188,15 +189,20 @@ class PatientController extends Controller
             $search = $request->input('search');
 
             // 🩺 Query appointments for the authenticated patient
-            $query = \App\Models\Appointment::with(['doctor.specialization'])
+            $query = Appointment::with(['doctor.specialization'])
                 ->where('patient_id', $patient->id)
+                ->where('is_archived', 0)
                 ->orderBy('created_at', 'desc');
 
             // 🔍 Search filter
             if (!empty($search)) {
-                $query->whereHas('doctor', function ($q) use ($search) {
-                    $q->where('doctor_name', 'like', "%{$search}%");
-                })->orWhere('appointment_no', 'like', "%{$search}%");
+                $query->where(function ($q) use ($search) {
+                    $q->whereHas('doctor', function ($sub) use ($search) {
+                        $sub->where('doctor_name', 'like', "%{$search}%");
+                    })
+                        ->orWhere('appointment_no', 'like', "%{$search}%")
+                        ->orWhere('reason_for_visit', 'like', "%{$search}%");
+                });
             }
 
             // ⚙️ Filter by status (optional)
@@ -206,23 +212,27 @@ class PatientController extends Controller
 
             $appointments = $query->paginate($perPage);
 
-            // 🧠 Transform response
+            // 🧠 Transform response for frontend
             $appointments->getCollection()->transform(function ($appointment) {
-                $appointment->doctor->profile_img = $appointment->doctor->profile_img
-                    ? asset($appointment->doctor->profile_img)
-                    : asset('default-profile.jpg');
+                $doctor = $appointment->doctor;
+                $specialization = $doctor?->specialization?->specialization_name ?? '—';
 
                 return [
-                    'appointment_id' => $appointment->id,
-                    'appointment_no' => $appointment->appointment_no,
-                    'doctor_name' => $appointment->doctor->doctor_name ?? 'Unknown Doctor',
-                    'doctor_email' => $appointment->doctor->email ?? null,
-                    'specialization' => $appointment->doctor->specialization->specialization_name ?? '—',
-                    'doctor_profile_img' => $appointment->doctor->profile_img,
-                    'date' => $appointment->date,
-                    'time' => $appointment->time,
-                    'status' => $appointment->status,
-                    'remarks' => $appointment->remarks ?? '—',
+                    'appointment_id'        => $appointment->id,
+                    'appointment_no'        => $appointment->appointment_no,
+                    'doctor_name'           => $doctor->doctor_name ?? 'Unknown Doctor',
+                    'doctor_email'          => $doctor->email ?? null,
+                    'specialization'        => $specialization,
+                    'doctor_profile_img'    => $doctor && $doctor->profile_img
+                        ? asset($doctor->profile_img)
+                        : asset('default-profile.jpg'),
+                    'appointment_date'      => $appointment->appointment_date,
+                    'appointment_time'      => $appointment->appointment_time,
+                    'reason_for_visit'      => $appointment->reason_for_visit ?? '—',
+                    'notes'                 => $appointment->notes ?? '—',
+                    'status'                => $appointment->status,
+                    'created_at'            => $appointment->created_at,
+                    'updated_at'            => $appointment->updated_at,
                 ];
             });
 
