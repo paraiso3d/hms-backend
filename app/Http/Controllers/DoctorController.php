@@ -406,6 +406,7 @@ class DoctorController extends Controller
             $search  = $request->input('search');
             $perPage = $request->input('per_page', 10);
 
+            // 🔍 Query appointments for this doctor
             $query = Appointment::where('doctor_id', $doctor->id)
                 ->where('is_archived', 0)
                 ->with(['patient'])
@@ -423,12 +424,20 @@ class DoctorController extends Controller
 
             $appointments = $query->paginate($perPage);
 
+            // 🧠 Map the data to include the full profile_img URL
+            $data = $appointments->map(function ($appointment) {
+                if ($appointment->patient && $appointment->patient->profile_img) {
+                    $appointment->patient->profile_img = asset($appointment->patient->profile_img);
+                }
+                return $appointment;
+            });
+
             return response()->json([
                 'isSuccess' => true,
                 'message' => $appointments->isEmpty()
                     ? 'No appointments found for this doctor.'
                     : 'Appointments retrieved successfully.',
-                'data' => $appointments->items(),
+                'data' => $data->values(),
                 'pagination' => [
                     'current_page' => $appointments->currentPage(),
                     'per_page' => $appointments->perPage(),
@@ -445,6 +454,7 @@ class DoctorController extends Controller
             ], 500);
         }
     }
+
 
 
     public function approveAppointment($id)
